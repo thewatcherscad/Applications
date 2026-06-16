@@ -244,6 +244,13 @@ tr:last-child td{border-bottom:none;}
 .af-status.marked{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
 /* ══ ADMIN USER NOTES ══ */
 .user-note-dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 6px var(--yellow);display:inline-block;margin-left:6px;vertical-align:middle;}
+/* ══ FORM BUILDER EXTRAS ══ */
+.template-card{background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:10px;padding:16px 20px;cursor:pointer;transition:border-color 0.2s,background 0.2s;display:flex;align-items:center;gap:14px;}
+.template-card:hover{border-color:var(--accent);background:var(--accent-dim2);}
+.template-icon{font-size:24px;flex-shrink:0;}
+.template-name{font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:2px;}
+.template-desc{font-size:11px;color:var(--text-3);}
+.ai-gen-area{background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:10px;padding:16px;}
 /* ══ MISC ══ */
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-2);}
 .empty-state-icon{font-size:40px;margin-bottom:16px;opacity:0.5;}
@@ -410,7 +417,29 @@ tr:last-child td{border-bottom:none;}
 
       <!-- CREATE FORM -->
       <div class="page-section fade-in" id="page-create-form">
-        <div class="page-header"><div class="page-header-eyebrow">Management</div><h1>Create Application Form</h1><p>Build a new public-facing form.</p></div>
+        <div class="page-header"><div class="page-header-eyebrow">Management</div><h1>Create Application Form</h1><p>Build a new form from scratch, a template, or with AI.</p></div>
+
+        <!-- QUICK START -->
+        <div class="card" id="cf-quickstart-card">
+          <div class="card-header" style="margin-bottom:16px;"><div class="card-title">⚡ Quick Start</div></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+            <div class="template-card" onclick="loadTemplate('staff')"><div class="template-icon">🛡️</div><div><div class="template-name">Staff Application</div><div class="template-desc">General server staff form</div></div></div>
+            <div class="template-card" onclick="loadTemplate('mod')"><div class="template-icon">⚔️</div><div><div class="template-name">Moderator Application</div><div class="template-desc">In-game moderator role</div></div></div>
+            <div class="template-card" onclick="loadTemplate('admin')"><div class="template-icon">👑</div><div><div class="template-name">Admin Application</div><div class="template-desc">Senior admin position</div></div></div>
+            <div class="template-card" onclick="loadTemplate('event')"><div class="template-icon">🎯</div><div><div class="template-name">Event Team</div><div class="template-desc">Event organiser role</div></div></div>
+          </div>
+          <div class="divider"></div>
+          <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.2em;color:var(--text-2);text-transform:uppercase;margin-bottom:10px;">✨ AI Generate</div>
+          <div class="ai-gen-area">
+            <div style="display:flex;gap:10px;">
+              <input class="form-input" id="ai-prompt" placeholder="e.g. DayZ staff application for a PvP survival server…" style="margin-bottom:0;">
+              <button class="btn btn-primary" onclick="aiGenerateForm()" id="ai-gen-btn" style="white-space:nowrap;">Generate ✨</button>
+            </div>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-3);margin-top:8px;" id="ai-gen-status"></div>
+          </div>
+        </div>
+
+        <!-- FORM BUILDER -->
         <div class="notice"><div class="notice-icon">ℹ</div>Each form gets a unique shareable link. Submissions appear instantly in your dashboard.</div>
         <div class="card">
           <div class="form-group"><label class="form-label">Form Title</label><input class="form-input" id="cf-title" placeholder="e.g. DayZ Staff Application"></div>
@@ -1186,7 +1215,7 @@ function renderForms(){
   const el=document.getElementById('forms-grid');const empty=document.getElementById('forms-empty');
   if(!db.forms.length){el.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  el.innerHTML=db.forms.map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;const locked=f.locked;return`<div class="card" style="margin-bottom:16px;border-color:${locked?'rgba(239,68,68,0.3)':''}"><div class="card-header"><div><div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;font-weight:600;">🔒 LOCKED</span>':''}</div><div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="getFormLink(${f.id})">🔗 Link</button><button class="btn btn-success btn-sm" onclick="openSendFormModal(${f.id})">📤 Send</button><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button><button class="${locked?'btn btn-success':'btn btn-warning'} btn-sm" onclick="toggleFormLock(${f.id})">${locked?'🔓 Unlock':'🔒 Lock'}</button><button class="btn btn-danger btn-sm" onclick="deleteForm(${f.id})">Delete</button></div></div><div style="font-size:13px;color:var(--text-2);line-height:1.6;">${esc((f.description||'').substring(0,160))}${(f.description||'').length>160?'…':''}</div></div>`;}).join('');
+  el.innerHTML=db.forms.map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;const locked=f.locked;return`<div class="card" style="margin-bottom:16px;border-color:${locked?'rgba(239,68,68,0.3)':''}"><div class="card-header"><div><div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;font-weight:600;">🔒 LOCKED</span>':''}</div><div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="getFormLink(${f.id})">🔗 Link</button><button class="btn btn-success btn-sm" onclick="openSendFormModal(${f.id})">📤 Send</button><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button><button class="btn btn-ghost btn-sm" onclick="duplicateForm(${f.id})">⧉ Duplicate</button><button class="${locked?'btn btn-success':'btn btn-warning'} btn-sm" onclick="toggleFormLock(${f.id})">${locked?'🔓 Unlock':'🔒 Lock'}</button><button class="btn btn-danger btn-sm" onclick="deleteForm(${f.id})">Delete</button></div></div><div style="font-size:13px;color:var(--text-2);line-height:1.6;">${esc((f.description||'').substring(0,160))}${(f.description||'').length>160?'…':''}</div></div>`;}).join('');
 }
 
 async function toggleFormLock(id){
@@ -1260,6 +1289,133 @@ function addQuestion(label='',type='text'){questionCount++;const id=questionCoun
 function updateQ(id,key,val){const q=questions.find(x=>x.id===id);if(q)q[key]=val;}
 function removeQ(id){questions=questions.filter(q=>q.id!==id);document.getElementById('qfield-'+id)?.remove();}
 async function saveForm(){const title=document.getElementById('cf-title').value.trim();const category=document.getElementById('cf-category').value.trim();const desc=document.getElementById('cf-desc').value.trim();if(!title){alert('Please enter a form title.');return;}if(!questions.length){alert('Please add at least one question.');return;}const form={id:Date.now(),title,category,description:desc,questions:questions.map(q=>({label:q.label,type:q.type})),created:nowStr()};db.forms.push(form);logActivity(`New form: "${title}"`,'accent');showLoading(true);await saveDB();showLoading(false);navigate('forms',document.getElementById('nav-forms'));}
+
+/* ══ FORM TEMPLATES ══ */
+const FORM_TEMPLATES={
+  staff:{
+    title:'Staff Application',category:'The Watchers',
+    description:'Thank you for your interest in joining the staff team. Please answer all questions honestly and in detail. Low-effort responses will not be considered.',
+    questions:[
+      {label:'What is your in-game name and Steam ID?',type:'text'},
+      {label:'How old are you?',type:'text'},
+      {label:'What timezone are you in?',type:'text'},
+      {label:'How long have you been playing on our server?',type:'text'},
+      {label:'How many hours per week can you dedicate to staffing?',type:'text'},
+      {label:'Do you have any previous staff experience? If so, describe it.',type:'textarea'},
+      {label:'Why do you want to join the staff team?',type:'textarea'},
+      {label:'How would you handle a situation where a friend is breaking the rules?',type:'textarea'},
+      {label:'Describe a time you resolved a conflict between players.',type:'textarea'},
+      {label:'Is there anything else you would like us to know?',type:'textarea'},
+    ]
+  },
+  mod:{
+    title:'Moderator Application',category:'The Watchers',
+    description:'We are looking for mature, dedicated moderators to help enforce the rules and keep our community safe. Please read all server rules before applying.',
+    questions:[
+      {label:'In-game name and Steam ID?',type:'text'},
+      {label:'Age?',type:'number'},
+      {label:'Timezone and country?',type:'text'},
+      {label:'How active are you on the server? (hours/week)',type:'text'},
+      {label:'Have you read and understood all server rules?',type:'text'},
+      {label:'Previous moderation experience?',type:'textarea'},
+      {label:'Why do you want to be a moderator?',type:'textarea'},
+      {label:'How would you respond to a cheating report?',type:'textarea'},
+      {label:'A senior staff member makes a decision you disagree with. What do you do?',type:'textarea'},
+      {label:'Any additional comments?',type:'textarea'},
+    ]
+  },
+  admin:{
+    title:'Admin Application',category:'The Watchers',
+    description:'Admin positions require experience, maturity, and full commitment to the community. Only apply if you meet the minimum requirements.',
+    questions:[
+      {label:'In-game name and Steam ID?',type:'text'},
+      {label:'Age?',type:'number'},
+      {label:'How long have you been part of our community?',type:'text'},
+      {label:'Have you held a staff role with us before? Which role?',type:'text'},
+      {label:'What qualifies you for an admin role?',type:'textarea'},
+      {label:'Describe your experience managing or moderating online communities.',type:'textarea'},
+      {label:'How do you handle admin abuse reports?',type:'textarea'},
+      {label:'What would you change or improve about the server?',type:'textarea'},
+      {label:'How many hours per week can you commit?',type:'text'},
+      {label:'References (other staff members who can vouch for you)?',type:'textarea'},
+    ]
+  },
+  event:{
+    title:'Event Team Application',category:'The Watchers',
+    description:'Join our event team and help create memorable experiences for the community. We are looking for creative and organised individuals.',
+    questions:[
+      {label:'In-game name?',type:'text'},
+      {label:'Age?',type:'number'},
+      {label:'Timezone?',type:'text'},
+      {label:'How long have you been a member of our community?',type:'text'},
+      {label:'Describe an event idea you would like to run.',type:'textarea'},
+      {label:'Do you have experience organising events (online or offline)?',type:'textarea'},
+      {label:'What skills can you bring to the event team?',type:'textarea'},
+      {label:'How many hours per week can you dedicate to events?',type:'text'},
+      {label:'Anything else you would like to add?',type:'textarea'},
+    ]
+  }
+};
+
+function loadTemplate(key){
+  const t=FORM_TEMPLATES[key];if(!t)return;
+  document.getElementById('cf-title').value=t.title;
+  document.getElementById('cf-category').value=t.category;
+  document.getElementById('cf-desc').value=t.description;
+  questions=[];questionCount=0;
+  document.getElementById('questions-list').innerHTML='';
+  t.questions.forEach(q=>addQuestion(q.label,q.type));
+  document.getElementById('cf-quickstart-card').scrollIntoView({behavior:'smooth'});
+  setTimeout(()=>document.getElementById('cf-title').scrollIntoView({behavior:'smooth'}),400);
+}
+
+async function aiGenerateForm(){
+  const prompt=document.getElementById('ai-prompt').value.trim();
+  if(!prompt){alert('Please describe the form you want to generate.');return;}
+  const btn=document.getElementById('ai-gen-btn');
+  const status=document.getElementById('ai-gen-status');
+  btn.disabled=true;btn.textContent='Generating…';
+  status.textContent='⏳ AI is building your form…';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{role:'user',content:`Create a staff/application form for: "${prompt}". Respond ONLY with a JSON object in this exact format, no markdown, no extra text:
+{"title":"...", "category":"...", "description":"...", "questions":[{"label":"...","type":"text|textarea|number"},...]}`}]
+      })
+    });
+    const data=await res.json();
+    let text=data.content.map(c=>c.text||'').join('');
+    text=text.replace(/\`\`\`json|\`\`\`/g,'').trim();
+    const form=JSON.parse(text);
+    document.getElementById('cf-title').value=form.title||'';
+    document.getElementById('cf-category').value=form.category||'';
+    document.getElementById('cf-desc').value=form.description||'';
+    questions=[];questionCount=0;
+    document.getElementById('questions-list').innerHTML='';
+    (form.questions||[]).forEach(q=>addQuestion(q.label,q.type||'text'));
+    status.textContent='✓ Form generated! Review and publish below.';
+    status.style.color='var(--green)';
+    setTimeout(()=>document.getElementById('cf-title').scrollIntoView({behavior:'smooth'}),300);
+  }catch(e){
+    status.textContent='✗ Generation failed. Try again or build manually.';
+    status.style.color='var(--red)';
+    console.error(e);
+  }
+  btn.disabled=false;btn.textContent='Generate ✨';
+}
+
+async function duplicateForm(id){
+  const f=db.forms.find(x=>x.id===id);if(!f)return;
+  const copy={...JSON.parse(JSON.stringify(f)),id:Date.now(),title:f.title+' (Copy)',created:nowStr(),locked:false};
+  db.forms.push(copy);
+  logActivity(`Form "${f.title}" duplicated`,'accent');
+  showLoading(true);await saveDB();showLoading(false);
+  renderForms();
+}
 
 /* ══ FORM LINK ══ */
 function getFormLink(id){document.getElementById('link-input').value=`${location.origin}${location.pathname}?form=${id}`;document.getElementById('copy-confirm').textContent='';openModal('modal-link');}
