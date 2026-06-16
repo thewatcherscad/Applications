@@ -1183,7 +1183,7 @@ async function submitApplication(){
   if(!name){alert('Please enter your name.');return;}
   const answers=form.questions.map((q,i)=>({question:q.label,answer:document.getElementById('pubq-'+i)?.value?.trim()||''}));
   if(answers.some(a=>!a.answer)){alert('Please answer all questions.');return;}
-  const app={id:db.applications.length+1,formId:form.id,formTitle:form.title,applicantName:name,submittedBy:currentUser?currentUser.username:'anonymous',answers,status:'pending',adminNote:'',date:nowStr()};
+  const app={id:Date.now(),formId:form.id,formTitle:form.title,applicantName:name,submittedBy:currentUser?currentUser.username:'anonymous',answers,status:'pending',adminNote:'',date:nowStr()};
   db.applications.push(app);
   logActivity(`New application from "${name}" for "${form.title}"`,'green');
   showLoading(true);await saveDB();showLoading(false);
