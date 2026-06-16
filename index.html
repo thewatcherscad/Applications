@@ -250,6 +250,20 @@ tr:last-child td{border-bottom:none;}
 .template-icon{font-size:24px;flex-shrink:0;}
 .template-name{font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:2px;}
 .template-desc{font-size:11px;color:var(--text-3);}
+/* ══ CHANGELOG ══ */
+.cl-post{background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:12px;padding:20px 24px;margin-bottom:14px;position:relative;}
+.cl-post::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);border-radius:3px 0 0 3px;}
+.cl-post.green::before{background:var(--green);}
+.cl-post.yellow::before{background:var(--yellow);}
+.cl-post.red::before{background:var(--red);}
+.cl-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;font-family:var(--mono);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px;}
+.cl-tag.update{background:var(--accent-dim);color:var(--accent);}
+.cl-tag.new{background:rgba(34,197,94,0.12);color:var(--green);}
+.cl-tag.fix{background:rgba(245,158,11,0.12);color:var(--yellow);}
+.cl-tag.notice{background:rgba(239,68,68,0.12);color:var(--red);}
+.cl-title{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:6px;}
+.cl-body{font-size:13px;color:var(--text-2);line-height:1.7;white-space:pre-wrap;}
+.cl-meta{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:10px;letter-spacing:0.1em;}
 /* ══ MISC ══ */
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-2);}
 .empty-state-icon{font-size:40px;margin-bottom:16px;opacity:0.5;}
@@ -359,6 +373,7 @@ tr:last-child td{border-bottom:none;}
       <div class="nav-section-label">System</div>
       <div class="nav-item" id="nav-activity" onclick="navigate('activity',this)"><span class="nav-icon">◈</span>Activity Log</div>
       <div class="nav-item" id="nav-maintenance" onclick="navigate('maintenance',this)"><span class="nav-icon">⚙</span>Maintenance</div>
+      <div class="nav-item" id="nav-changelog" onclick="navigate('changelog',this)"><span class="nav-icon">📢</span>Changelog</div>
     </div>
     <div class="content">
 
@@ -500,6 +515,30 @@ tr:last-child td{border-bottom:none;}
         </div>
       </div>
 
+      <!-- CHANGELOG (ADMIN) -->
+      <div class="page-section fade-in" id="page-changelog">
+        <div class="page-header"><div class="page-header-eyebrow">Community</div><h1>Changelog</h1><p>Post updates, fixes and announcements. Visible to all users.</p></div>
+        <div class="card">
+          <div class="card-header" style="margin-bottom:16px;"><div class="card-title">New Post</div></div>
+          <div class="form-row" style="margin-bottom:14px;">
+            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Title</label><input class="form-input" id="cl-new-title" placeholder="e.g. New features added"></div>
+            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Tag</label>
+              <select class="form-select" id="cl-new-tag">
+                <option value="update">🔄 Update</option>
+                <option value="new">✨ New Feature</option>
+                <option value="fix">🔧 Bug Fix</option>
+                <option value="notice">📢 Notice</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Message</label><textarea class="form-textarea" id="cl-new-body" placeholder="Describe what changed or what's new…" style="min-height:100px;"></textarea></div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button class="btn btn-primary" onclick="postChangelog()">📢 Post Update</button>
+          </div>
+        </div>
+        <div id="cl-admin-list"></div>
+      </div>
+
       <!-- ACTIVITY -->
       <div class="page-section fade-in" id="page-activity">
         <div class="page-header"><div class="page-header-eyebrow">System</div><h1>Activity Log</h1><p>All admin actions, registrations, and submissions.</p></div>
@@ -518,6 +557,7 @@ tr:last-child td{border-bottom:none;}
       <div class="ap-nav-item active" onclick="apNavigate('applications',this)">My Applications</div>
       <div class="ap-nav-item" onclick="apNavigate('forms',this)">My Forms</div>
       <div class="ap-nav-item" onclick="apNavigate('support',this)">Support</div>
+      <div class="ap-nav-item" onclick="apNavigate('changelog',this)">Updates</div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:16px;">
       <div class="topbar-user" id="ap-username"></div>
@@ -538,6 +578,15 @@ tr:last-child td{border-bottom:none;}
         <div style="font-size:13px;color:var(--text-2);">Forms assigned to you by the admin. Click to fill them out.</div>
       </div>
       <div id="ap-forms-list"></div>
+    </div>
+
+    <!-- Changelog -->
+    <div class="ap-page" id="ap-page-changelog">
+      <div style="margin-bottom:24px;">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text-1);margin-bottom:4px;">Updates</div>
+        <div style="font-size:13px;color:var(--text-2);">Latest changes, features and announcements from the admin team.</div>
+      </div>
+      <div id="cl-user-list"></div>
     </div>
 
     <!-- Support / Tickets -->
@@ -796,6 +845,7 @@ async function loadDB(){
     if(!db.tickets)db.tickets=[];
     if(!db.assignedForms)db.assignedForms=[];
     if(!db.maintenance)db.maintenance={};
+    if(!db.changelog)db.changelog=[];
     if(!db.users.find(u=>u.username==='1877')){
       db.users.unshift({username:'1877',password:'1877',role:'admin',status:'active',created:nowStr()});
       await saveDB();
@@ -952,6 +1002,7 @@ function apNavigate(page,el){
   if(el)el.classList.add('active');
   if(page==='support')renderUserTickets();
   if(page==='forms')renderUserAssignedForms();
+  if(page==='changelog')renderChangelogUser();
 }
 
 /* ══ APPLICANT APPS ══ */
@@ -991,6 +1042,7 @@ function refreshPage(page){
   if(page==='tickets')renderAdminTickets();
   if(page==='activity')renderActivity();
   if(page==='maintenance')renderMaintenancePage();
+  if(page==='changelog'){renderChangelogAdmin();}
 }
 async function refreshAll(){showLoading(true);await loadDB();showLoading(false);updateBadges();renderDashboard();}
 
@@ -1595,6 +1647,58 @@ async function syncSheets(){
     const payload=encodeURIComponent(JSON.stringify({users}));
     await fetch(SHEETS_URL+'?data='+payload,{method:'GET',mode:'no-cors'});
   }catch(e){console.warn('Sheets sync failed (non-critical):',e);}
+}
+
+/* ══ CHANGELOG ══ */
+const CL_TAG_LABELS={update:'🔄 Update',new:'✨ New Feature',fix:'🔧 Bug Fix',notice:'📢 Notice'};
+const CL_TAG_COLORS={update:'',new:'green',fix:'yellow',notice:'red'};
+
+function renderChangelogAdmin(){
+  const posts=(db.changelog||[]);
+  const el=document.getElementById('cl-admin-list');
+  if(!posts.length){el.innerHTML='<div class="empty-state"><div class="empty-state-icon">📢</div><h3>No posts yet</h3><p>Post your first update above.</p></div>';return;}
+  el.innerHTML=posts.map((p,i)=>`
+    <div class="cl-post ${CL_TAG_COLORS[p.tag]||''}">
+      <span class="cl-tag ${p.tag}">${CL_TAG_LABELS[p.tag]||p.tag}</span>
+      <div class="cl-title">${esc(p.title)}</div>
+      <div class="cl-body">${esc(p.body)}</div>
+      <div class="cl-meta">${p.date} · Posted by Admin <button class="btn btn-danger btn-sm" style="margin-left:12px;padding:3px 10px;font-size:11px;" onclick="deleteChangelog(${i})">Delete</button></div>
+    </div>`).join('');
+}
+
+function renderChangelogUser(){
+  const posts=(db.changelog||[]);
+  const el=document.getElementById('cl-user-list');
+  if(!el)return;
+  if(!posts.length){el.innerHTML='<div class="empty-state"><div class="empty-state-icon">📢</div><h3>No updates yet</h3><p>Check back soon for news and updates.</p></div>';return;}
+  el.innerHTML=posts.map(p=>`
+    <div class="cl-post ${CL_TAG_COLORS[p.tag]||''}">
+      <span class="cl-tag ${p.tag}">${CL_TAG_LABELS[p.tag]||p.tag}</span>
+      <div class="cl-title">${esc(p.title)}</div>
+      <div class="cl-body">${esc(p.body)}</div>
+      <div class="cl-meta">${p.date}</div>
+    </div>`).join('');
+}
+
+async function postChangelog(){
+  const title=document.getElementById('cl-new-title').value.trim();
+  const body=document.getElementById('cl-new-body').value.trim();
+  const tag=document.getElementById('cl-new-tag').value;
+  if(!title||!body){alert('Please fill in both title and message.');return;}
+  if(!db.changelog)db.changelog=[];
+  db.changelog.unshift({title,body,tag,date:nowStr()});
+  logActivity('Changelog post: "'+title+'"','accent');
+  showLoading(true);await saveDB();showLoading(false);
+  document.getElementById('cl-new-title').value='';
+  document.getElementById('cl-new-body').value='';
+  renderChangelogAdmin();
+}
+
+async function deleteChangelog(index){
+  if(!confirm('Delete this post?'))return;
+  db.changelog.splice(index,1);
+  showLoading(true);await saveDB();showLoading(false);
+  renderChangelogAdmin();
 }
 
 /* ══ ACTIVITY ══ */
