@@ -227,6 +227,13 @@ tr:last-child td{border-bottom:none;}
 .cat-filter{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border-dim);color:var(--text-2);background:transparent;font-family:var(--mono);letter-spacing:0.1em;transition:all 0.2s;}
 .cat-filter:hover{border-color:var(--border);color:var(--text-1);}
 .cat-filter.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+/* ══ ASSIGNED FORMS ══ */
+.assign-form-card{background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:10px;padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;}
+.assign-form-card:hover{border-color:var(--border);background:var(--bg-hover);}
+.assign-form-title{font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:3px;}
+.assign-form-meta{font-family:var(--mono);font-size:11px;color:var(--text-3);}
+.assign-form-badge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:3px 10px;border-radius:4px;background:var(--accent-dim);color:var(--accent);flex-shrink:0;}
+.assign-form-badge.completed{background:rgba(34,197,94,0.12);color:var(--green);}
 /* ══ MISC ══ */
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-2);}
 .empty-state-icon{font-size:40px;margin-bottom:16px;opacity:0.5;}
@@ -455,6 +462,7 @@ tr:last-child td{border-bottom:none;}
     <div class="topbar-logo"><div class="topbar-logo-dot"></div>NEXUS PORTAL</div>
     <div class="ap-nav">
       <div class="ap-nav-item active" onclick="apNavigate('applications',this)">My Applications</div>
+      <div class="ap-nav-item" onclick="apNavigate('forms',this)">My Forms</div>
       <div class="ap-nav-item" onclick="apNavigate('support',this)">Support</div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:16px;">
@@ -469,6 +477,15 @@ tr:last-child td{border-bottom:none;}
       <div class="ap-sub">Here is the current status of your application(s).</div>
       <div id="ap-apps-list"></div>
     </div>
+    <!-- My Forms -->
+    <div class="ap-page" id="ap-page-forms">
+      <div style="margin-bottom:24px;">
+        <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text-1);margin-bottom:4px;">My Forms</div>
+        <div style="font-size:13px;color:var(--text-2);">Forms assigned to you by the admin. Click to fill them out.</div>
+      </div>
+      <div id="ap-forms-list"></div>
+    </div>
+
     <!-- Support / Tickets -->
     <div class="ap-page" id="ap-page-support">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
@@ -657,7 +674,7 @@ tr:last-child td{border-bottom:none;}
 let JSONBIN_KEY='', JSONBIN_ID='';
 const BIN_URL=()=>`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`;
 const HEADERS=()=>({'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Versioning':'false'});
-let db={forms:[],applications:[],users:[],activity:[],tickets:[]};
+let db={forms:[],applications:[],users:[],activity:[],tickets:[],assignedForms:[]};
 let currentUser=null;
 
 /* ══ DB ══ */
@@ -672,6 +689,7 @@ async function loadDB(){
     if(!db.users)db.users=[];
     if(!db.activity)db.activity=[];
     if(!db.tickets)db.tickets=[];
+    if(!db.assignedForms)db.assignedForms=[];
     if(!db.users.find(u=>u.username==='1877')){
       db.users.unshift({username:'1877',password:'1877',role:'admin',status:'active',created:nowStr()});
       await saveDB();
@@ -793,6 +811,7 @@ function launchApplicantPortal(){
   document.getElementById('applicant-portal').classList.add('active');
   renderApplicantApps();
   renderUserTickets();
+  renderUserAssignedForms();
 }
 
 /* ══ APPLICANT PORTAL NAV ══ */
@@ -802,6 +821,7 @@ function apNavigate(page,el){
   document.getElementById('ap-page-'+page).classList.add('active');
   if(el)el.classList.add('active');
   if(page==='support')renderUserTickets();
+  if(page==='forms')renderUserAssignedForms();
 }
 
 /* ══ APPLICANT APPS ══ */
@@ -1026,9 +1046,60 @@ function renderForms(){
   const el=document.getElementById('forms-grid');const empty=document.getElementById('forms-empty');
   if(!db.forms.length){el.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  el.innerHTML=db.forms.map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;return`<div class="card" style="margin-bottom:16px;"><div class="card-header"><div><div class="card-title">${esc(f.title)}</div><div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div></div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="getFormLink(${f.id})">🔗 Link</button><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button><button class="btn btn-danger btn-sm" onclick="deleteForm(${f.id})">Delete</button></div></div><div style="font-size:13px;color:var(--text-2);line-height:1.6;">${esc((f.description||'').substring(0,160))}${(f.description||'').length>160?'…':''}</div></div>`;}).join('');
+  el.innerHTML=db.forms.map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;return`<div class="card" style="margin-bottom:16px;"><div class="card-header"><div><div class="card-title">${esc(f.title)}</div><div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div></div><div style="display:flex;gap:8px;"><button class="btn btn-ghost btn-sm" onclick="getFormLink(${f.id})">🔗 Link</button><button class="btn btn-success btn-sm" onclick="openSendFormModal(${f.id})">📤 Send</button><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button><button class="btn btn-danger btn-sm" onclick="deleteForm(${f.id})">Delete</button></div></div><div style="font-size:13px;color:var(--text-2);line-height:1.6;">${esc((f.description||'').substring(0,160))}${(f.description||'').length>160?'…':''}</div></div>`;}).join('');
 }
 async function deleteForm(id){if(!confirm('Delete this form?'))return;db.forms=db.forms.filter(f=>f.id!==id);logActivity('Form deleted','red');showLoading(true);await saveDB();showLoading(false);renderForms();}
+
+/* SEND FORM TO USER */
+let _sendingFormId=null;
+function openSendFormModal(formId){
+  _sendingFormId=formId;
+  const users=db.users.filter(u=>u.role!=='admin'&&u.status!=='closed');
+  const sel=document.getElementById('sf-user-select');
+  if(!users.length){alert('No active users to send forms to.');return;}
+  sel.innerHTML=users.map(u=>'<option value="'+u.username+'">'+u.username+'</option>').join('');
+  document.getElementById('sf-error').textContent='';
+  openModal('modal-send-form');
+}
+async function submitSendForm(){
+  const username=document.getElementById('sf-user-select').value;
+  if(!username){document.getElementById('sf-error').textContent='Please select a user.';return;}
+  if(!db.assignedForms)db.assignedForms=[];
+  const already=db.assignedForms.find(a=>a.formId===_sendingFormId&&a.username===username);
+  if(already){document.getElementById('sf-error').textContent='This form is already assigned to that user.';return;}
+  const form=db.forms.find(f=>f.id===_sendingFormId);
+  db.assignedForms.push({formId:_sendingFormId,username,assignedAt:nowStr(),formTitle:form?form.title:'Unknown'});
+  logActivity('Form "'+(form?form.title:_sendingFormId)+'" sent to '+username,'green');
+  showLoading(true);await saveDB();showLoading(false);
+  closeModal('modal-send-form');
+  alert('Form sent to '+username+' successfully!');
+}
+
+/* RENDER USER ASSIGNED FORMS */
+function renderUserAssignedForms(){
+  const assigned=(db.assignedForms||[]).filter(a=>a.username===currentUser.username);
+  const el=document.getElementById('ap-forms-list');
+  if(!el)return;
+  if(!assigned.length){
+    el.innerHTML='<div class="ap-no-apps"><div class="ap-no-apps-icon">▣</div><h3 style="font-size:16px;font-weight:600;color:var(--text-1);margin-bottom:8px;">No Forms Assigned</h3><p>The admin has not sent you any forms yet.</p></div>';
+    return;
+  }
+  el.innerHTML=assigned.map(a=>{
+    const form=db.forms.find(f=>f.id===a.formId);
+    const submitted=db.applications.find(app=>app.formId===a.formId&&app.submittedBy===currentUser.username);
+    return '<div class="assign-form-card">'
+      +'<div style="flex:1;">'
+        +'<div class="assign-form-title">'+a.formTitle+'</div>'
+        +'<div class="assign-form-meta">Assigned '+a.assignedAt+(form?' · '+form.questions.length+' questions':'')+'</div>'
+      +'</div>'
+      +(submitted
+        ?'<span class="assign-form-badge completed">✓ Submitted</span><button class="btn btn-ghost btn-sm" style="margin-left:8px;" disabled>Already Submitted</button>'
+        :form
+          ?'<span class="assign-form-badge">'+(form.category||'Form')+'</span><button class="btn btn-primary btn-sm" style="margin-left:8px;" onclick="openPublicForm('+a.formId+')">Fill Out →</button>'
+          :'<span class="text-muted" style="font-size:12px;">Form removed</span>')
+    +'</div>';
+  }).join('');
+}
 let questions=[],questionCount=0;
 function initCreateForm(){questions=[];questionCount=0;['cf-title','cf-category','cf-desc'].forEach(id=>document.getElementById(id).value='');document.getElementById('questions-list').innerHTML='';addQuestion('What is your in-game name / username?','text');addQuestion('How old are you?','text');addQuestion('Tell us about yourself and your experience.','textarea');addQuestion('Why do you want to join?','textarea');addQuestion('How many hours per week can you commit?','text');}
 function addQuestion(label='',type='text'){questionCount++;const id=questionCount;questions.push({id,label,type});const el=document.createElement('div');el.className='form-builder-field';el.id='qfield-'+id;el.innerHTML=`<div style="color:var(--text-3);font-size:18px;padding-top:20px;cursor:grab;">⠿</div><div class="fb-field-body"><div class="form-row" style="margin-bottom:0;"><div><label class="form-label" style="font-size:9px;">Question Label</label><input class="form-input" style="font-size:12px;" value="${esc(label)}" placeholder="Enter question…" oninput="updateQ(${id},'label',this.value)"></div><div><label class="form-label" style="font-size:9px;">Field Type</label><select class="form-select" style="font-size:12px;" onchange="updateQ(${id},'type',this.value)"><option value="text" ${type==='text'?'selected':''}>Short Text</option><option value="textarea" ${type==='textarea'?'selected':''}>Long Text</option><option value="number" ${type==='number'?'selected':''}>Number</option></select></div></div></div><button class="btn btn-danger btn-sm" onclick="removeQ(${id})" style="margin-top:20px;">✕</button>`;document.getElementById('questions-list').appendChild(el);}
