@@ -242,6 +242,8 @@ tr:last-child td{border-bottom:none;}
 .af-status.accepted{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
 .af-status.rejected{background:rgba(239,68,68,0.1);color:var(--red);border:1px solid rgba(239,68,68,0.25);}
 .af-status.marked{background:rgba(34,197,94,0.1);color:var(--green);border:1px solid rgba(34,197,94,0.25);}
+/* ══ ADMIN USER NOTES ══ */
+.user-note-dot{width:8px;height:8px;border-radius:50%;background:var(--yellow);box-shadow:0 0 6px var(--yellow);display:inline-block;margin-left:6px;vertical-align:middle;}
 /* ══ MISC ══ */
 .empty-state{text-align:center;padding:60px 20px;color:var(--text-2);}
 .empty-state-icon{font-size:40px;margin-bottom:16px;opacity:0.5;}
@@ -689,6 +691,23 @@ tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+<!-- User Notes Modal -->
+<div class="modal-overlay" id="modal-user-notes">
+  <div class="modal" style="width:500px;">
+    <div class="modal-header"><div class="modal-title" id="un-modal-title">Admin Notes</div><button class="modal-close" onclick="closeModal('modal-user-notes')">&#x2715;</button></div>
+    <div class="modal-body">
+      <div class="notice" style="margin-bottom:16px;"><div class="notice-icon">&#128274;</div><span>These notes are <b>only visible to admins</b>. The user will never see them.</span></div>
+      <div class="form-group"><label class="form-label">Internal Note</label><textarea class="form-textarea" id="un-note" placeholder="e.g. Previously warned for toxic behaviour..." style="min-height:140px;"></textarea></div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--green);min-height:16px;" id="un-saved"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="clearUserNote()">Clear Note</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-user-notes')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUserNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
 <div id="loading-overlay" style="position:fixed;inset:0;background:rgba(7,11,20,0.85);z-index:99999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:0.3em;">SYNCING DATABASE…</div>
   <div style="width:200px;"><div class="loading-bar"><div class="loading-bar-fill"></div></div></div>
@@ -1007,6 +1026,7 @@ function renderUsers(){
         ${u.status==='closed'
           ?`<button class="btn btn-success btn-sm" onclick="reopenAccount('${esc(u.username)}')">Reopen</button>`
           :`<button class="btn btn-warning btn-sm" onclick="openCloseAccountModal('${esc(u.username)}')">Close</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="openUserNotesModal('${esc(u.username)}')" title="Notes">📝${u.adminNote?'<span class=\"user-note-dot\"></span>':''}</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDelete('${esc(u.username)}','user','${esc(u.username)}')">Delete</button>
       </div></td>
     </tr>`;
@@ -1087,6 +1107,34 @@ async function reopenAccount(username){
   u.status='active';delete u.closeReason;
   logActivity(`Account reopened: ${username}`,'green');
   showLoading(true);await saveDB();showLoading(false);renderUsers();
+}
+
+/* ══ USER NOTES ══ */
+let _notesUser=null;
+function openUserNotesModal(username){
+  const u=db.users.find(x=>x.username===username);if(!u)return;
+  _notesUser=username;
+  document.getElementById('un-modal-title').textContent='Admin Notes — '+username;
+  document.getElementById('un-note').value=u.adminNote||'';
+  document.getElementById('un-saved').textContent='';
+  openModal('modal-user-notes');
+}
+async function saveUserNote(){
+  const u=db.users.find(x=>x.username===_notesUser);if(!u)return;
+  u.adminNote=document.getElementById('un-note').value.trim();
+  showLoading(true);await saveDB();showLoading(false);
+  document.getElementById('un-saved').textContent='✓ Saved';
+  setTimeout(()=>{document.getElementById('un-saved').textContent='';},2000);
+  renderUsers();
+}
+async function clearUserNote(){
+  const u=db.users.find(x=>x.username===_notesUser);if(!u)return;
+  u.adminNote='';
+  document.getElementById('un-note').value='';
+  showLoading(true);await saveDB();showLoading(false);
+  document.getElementById('un-saved').textContent='✓ Cleared';
+  setTimeout(()=>{document.getElementById('un-saved').textContent='';},2000);
+  renderUsers();
 }
 
 /* ══ FORMS ══ */
