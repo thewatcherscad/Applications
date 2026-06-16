@@ -664,6 +664,22 @@ tr:last-child td{border-bottom:none;}
 </div>
 
 <!-- Loading -->
+<!-- Send Form to User Modal -->
+<div class="modal-overlay" id="modal-send-form">
+  <div class="modal" style="width:480px;">
+    <div class="modal-header"><div class="modal-title">Send Form to User</div><button class="modal-close" onclick="closeModal('modal-send-form')">✕</button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:20px;">Select a user to assign this form to. They will see it in their "My Forms" tab.</p>
+      <div class="form-group"><label class="form-label">Select User</label><select class="form-select" id="sf-user-select"></select></div>
+      <div class="auth-error" id="sf-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-send-form')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitSendForm()">Send Form</button>
+    </div>
+  </div>
+</div>
+
 <div id="loading-overlay" style="position:fixed;inset:0;background:rgba(7,11,20,0.85);z-index:99999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="font-family:var(--mono);font-size:12px;color:var(--accent);letter-spacing:0.3em;">SYNCING DATABASE…</div>
   <div style="width:200px;"><div class="loading-bar"><div class="loading-bar-fill"></div></div></div>
