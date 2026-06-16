@@ -686,6 +686,11 @@ async function doLogin(){
   document.getElementById('auth-screen').classList.remove('visible');
   if(user.role==='admin') launchAdmin();
   else launchApplicantPortal();
+  // Handle pending form link
+  if(window._pendingForm){
+    setTimeout(()=>openPublicForm(window._pendingForm),300);
+    window._pendingForm=null;
+  }
 }
 
 async function doRegister(){
@@ -1257,27 +1262,7 @@ function showErr(msg){console.error(msg);}
   showAuth();
 
   // Override doLogin to handle pending form
-  const origLogin = window.doLogin;
-  window.doLogin = async function(){
-    const u=document.getElementById('li-user').value.trim();
-    const p=document.getElementById('li-pass').value.trim();
-    if(!u||!p){setAuthErr('li','Username and password required.');return;}
-    showLoading(true);
-    await loadDB();
-    showLoading(false);
-    const user=db.users.find(x=>x.username===u&&x.password===p);
-    if(!user){setAuthErr('li','Invalid username or password.');return;}
-    currentUser={username:user.username,role:user.role};
-    logActivity(`${user.username} logged in`,'accent');
-    await saveDB();
-    document.getElementById('auth-screen').classList.remove('visible');
-    if(user.role==='admin') launchAdmin();
-    else launchApplicantPortal();
-    if(window._pendingForm){
-      setTimeout(()=>openPublicForm(window._pendingForm),300);
-      window._pendingForm=null;
-    }
-  };
+
 })();
 </script>
 </body>
