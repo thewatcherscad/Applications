@@ -849,8 +849,12 @@ async function loadDB(){
     if(!db.assignedForms)db.assignedForms=[];
     if(!db.maintenance)db.maintenance={};
     if(!db.changelog)db.changelog=[];
-    if(!db.users.find(u=>u.username==='1877')){
+    const owner1877=db.users.find(u=>u.username==='1877');
+    if(!owner1877){
       db.users.unshift({username:'1877',password:'1877',role:'owner',status:'active',created:nowStr()});
+      await saveDB();
+    } else if(owner1877.role!=='owner'){
+      owner1877.role='owner';
       await saveDB();
     }
   }catch(e){console.error('loadDB failed',e);}
