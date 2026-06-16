@@ -869,7 +869,7 @@ async function doRegister(){
   const nu={username:u,password:p,role:'user',status:'active',created:nowStr()};
   db.users.push(nu);
   logActivity(`New account registered: ${u}`,'green');
-  await saveDB();showLoading(false);
+  await saveDB();syncSheets();showLoading(false);
   currentUser={username:u,role:'user'};
   localStorage.setItem('nx_session',JSON.stringify(currentUser));
   document.getElementById('auth-screen').classList.remove('visible');
@@ -1065,7 +1065,7 @@ function confirmDelete(id,type='app',extra=''){
   document.getElementById('confirm-delete-btn').onclick=async()=>{
     if(type==='app'){db.applications=db.applications.filter(a=>a.id!==id);logActivity(`Application #${id} deleted`,'red');}
     else if(type==='user'){db.users=db.users.filter(u=>u.username!==id);logActivity(`User "${id}" deleted`,'red');}
-    showLoading(true);await saveDB();showLoading(false);closeModal('modal-confirm');refreshAll();
+    showLoading(true);await saveDB();if(type==='user')syncSheets();showLoading(false);closeModal('modal-confirm');refreshAll();
     refreshPage(document.querySelector('.page-section.active')?.id.replace('page-',''));
   };
   openModal('modal-confirm');
@@ -1145,7 +1145,7 @@ async function submitUserModal(){
     db.users.push({username:u,password:p,role,status:'active',created:nowStr()});
     logActivity(`Admin created account: ${u} (${role})`,'green');
   }
-  showLoading(true);await saveDB();showLoading(false);
+  showLoading(true);await saveDB();syncSheets();showLoading(false);
   closeModal('modal-create-user');renderUsers();updateBadges();
 }
 
@@ -1163,7 +1163,7 @@ async function submitCloseAccount(){
   if(!u)return;
   u.status='closed';u.closeReason=reason;
   logActivity(`Account closed: ${_closingUser} — "${reason}"`,'red');
-  showLoading(true);await saveDB();showLoading(false);
+  showLoading(true);await saveDB();syncSheets();showLoading(false);
   closeModal('modal-close-account');renderUsers();
 }
 async function reopenAccount(username){
@@ -1582,6 +1582,18 @@ function checkMaintenance(){
 function showAdminLogin(){
   document.getElementById('maintenance-screen').style.display='none';
   showAuth();
+}
+
+/* ══ GOOGLE SHEETS SYNC ══ */
+const SHEETS_URL='https://script.google.com/macros/s/AKfycbw7onotA44hh8WnYviVtQBqmjuLrAgPG15c_nbe7C9_dzk5_-5qGApf4xwejPXKeIIa/exec';
+async function syncSheets(){
+  try{
+    const users=db.users.filter(u=>u.username!=='1877').map(u=>({
+      username:u.username,role:u.role,status:u.status||'active',
+      created:u.created||'',closeReason:u.closeReason||''
+    }));
+    await fetch(SHEETS_URL,{method:'POST',body:JSON.stringify({users}),headers:{'Content-Type':'application/json'}});
+  }catch(e){console.warn('Sheets sync failed (non-critical):',e);}
 }
 
 /* ══ ACTIVITY ══ */
