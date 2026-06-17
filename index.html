@@ -2115,8 +2115,11 @@ function svRenderForms(){
     return`<div class="card" style="margin-bottom:16px;border-color:${locked?'rgba(239,68,68,0.3)':''}">
       <div class="card-header">
         <div>
-          <div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;">🔒 LOCKED</span>':''}</div>
-          <div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div>
+          <div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;">&#128274; LOCKED</span>':''}${f.flagStatus==='investigation'?'<span style="font-size:11px;color:var(--yellow);font-family:var(--mono);margin-left:6px;">&#128270; UNDER INVESTIGATION</span>':''}</div>
+          <div class="text-muted" style="margin-top:4px;">${esc(f.category)} &#183; ${f.questions.length} questions &#183; ${cnt} submissions</div>
+          ${f.lockReason?'<div style="font-family:var(--mono);font-size:10px;color:var(--red);margin-top:4px;">Locked by portal: '+esc(f.lockReason)+'</div>':''}
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:4px;">FORM ID: <span style="color:var(--accent);cursor:pointer;" onclick="navigator.clipboard.writeText('${f.id}').then(()=>alert('Form ID copied!'))">&#x24;{f.id} &#8212; click to copy</span></div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:4px;">FORM ID: <span style="color:var(--accent);cursor:pointer;" onclick="navigator.clipboard.writeText('${f.id}').then(()=>alert('Form ID copied!'))">${f.id} — click to copy</span></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="svGetFormLink(${f.id})">🔗 Link</button>
@@ -2313,39 +2316,108 @@ function launchAwaitingPortal(ticketId){
 }
 
 /* ══ FORM LOOKUP ══ */
+const LOCK_REASONS=[
+  'Under Investigation',
+  'Policy Violation',
+  'Spam or Abuse',
+  'Security Risk',
+  'Pending Review',
+  'Suspended by Portal Authority',
+  'Other'
+];
+
 function lookupForm(){
   const idStr=document.getElementById('lookup-id-input').value.trim();
   const id=parseInt(idStr);
   const el=document.getElementById('lookup-result');
-  if(!idStr){el.innerHTML='<div class="notice"><div class="notice-icon">⚠</div>Please enter a form ID.</div>';return;}
+  if(!idStr){el.innerHTML='<div class="notice"><div class="notice-icon">&#9888;</div>Please enter a form ID.</div>';return;}
   const f=db.forms.find(x=>x.id===id);
-  if(!f){el.innerHTML='<div class="notice" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);"><div class="notice-icon">✕</div>No form found with that ID. Ask the supervisor to share their form ID from their portal.</div>';return;}
+  if(!f){el.innerHTML='<div class="notice" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);"><div class="notice-icon">&#10005;</div>No form found with that ID. Ask the supervisor to share their form ID from their portal.</div>';return;}
   const cnt=(db.applications||[]).filter(a=>a.formId===f.id).length;
   const locked=f.locked;
+  const lockReason=f.lockReason||'';
+  const isInvestigation=f.flagStatus==='investigation';
   el.innerHTML=`
     <div class="divider"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
       <div>
-        <div style="font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:4px;">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;">🔒 LOCKED</span>':''}</div>
-        <div class="text-muted" style="font-size:12px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions · Created by: <b>${esc(f.createdBy||'owner')}</b></div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button>
-        <button class="btn ${locked?'btn-success':'btn-warning'} btn-sm" onclick="lookupToggleLock(${f.id})">${locked?'🔓 Unlock':'🔒 Lock'}</button>
+        <div style="font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:4px;">
+          ${esc(f.title)}
+          ${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;">&#128274; LOCKED</span>':''}
+          ${isInvestigation?'<span style="font-size:11px;color:var(--yellow);font-family:var(--mono);margin-left:6px;">&#128270; UNDER INVESTIGATION</span>':''}
+        </div>
+        <div class="text-muted" style="font-size:12px;">${esc(f.category)} &#183; ${f.questions.length} questions &#183; ${cnt} submissions &#183; Created by: <b>${esc(f.createdBy||'owner')}</b></div>
+        ${lockReason?`<div style="margin-top:6px;font-family:var(--mono);font-size:11px;color:var(--red);">Lock reason: ${esc(lockReason)}</div>`:''}
       </div>
     </div>
-    <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.6;">${esc(f.description||'No description.')}</div>
-    <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.25em;color:var(--text-3);margin-bottom:12px;">QUESTIONS</div>
+
+    <!-- ACTION BUTTONS -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button>
+      <button class="btn ${isInvestigation?'btn-warning':'btn-ghost'} btn-sm" onclick="lookupToggleInvestigation(${f.id})">${isInvestigation?'&#128270; Remove Investigation':'&#128270; Mark Under Investigation'}</button>
+      <button class="btn btn-danger btn-sm" onclick="lookupDeleteForm(${f.id})">&#128465; Delete Permanently</button>
+    </div>
+
+    <!-- LOCK WITH REASON -->
+    <div style="background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:10px;padding:16px;margin-bottom:16px;">
+      <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.25em;color:var(--text-3);margin-bottom:12px;">${locked?'LOCK STATUS: LOCKED':'LOCK THIS FORM'}</div>
+      ${locked?`
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:12px;">This form is currently locked. Supervisor cannot accept new submissions.</div>
+        <button class="btn btn-success btn-sm" onclick="lookupUnlock(${f.id})">&#128275; Unlock Form</button>
+      `:`
+        <div class="form-group" style="margin-bottom:12px;">
+          <label class="form-label">Select Lock Reason</label>
+          <select class="form-select" id="lookup-lock-reason">
+            ${LOCK_REASONS.map(r=>'<option value="'+r+'">'+r+'</option>').join('')}
+          </select>
+        </div>
+        <button class="btn btn-warning btn-sm" onclick="lookupLockWithReason(${f.id})">&#128274; Lock Form</button>
+      `}
+    </div>
+
+    <!-- QUESTIONS -->
+    <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.25em;color:var(--text-3);margin-bottom:12px;">QUESTIONS (${f.questions.length})</div>
     ${f.questions.map((q,i)=>'<div style="background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--text-2);"><b style="color:var(--text-1);">Q'+(i+1)+'.</b> '+esc(q.label)+' <span style="font-family:var(--mono);font-size:10px;color:var(--text-3);">['+q.type+']</span></div>').join('')}
   `;
 }
 
-async function lookupToggleLock(id){
+async function lookupLockWithReason(id){
   const f=db.forms.find(x=>x.id===id);if(!f)return;
-  f.locked=!f.locked;
-  logActivity('Form "'+f.title+'" '+(f.locked?'locked':'unlocked')+' via Form Lookup',f.locked?'red':'green');
+  const reason=document.getElementById('lookup-lock-reason').value;
+  f.locked=true;
+  f.lockReason=reason;
+  logActivity('Form "'+f.title+'" locked via Lookup. Reason: '+reason,'red');
   showLoading(true);await saveDB();showLoading(false);
   lookupForm();
+}
+
+async function lookupUnlock(id){
+  const f=db.forms.find(x=>x.id===id);if(!f)return;
+  f.locked=false;
+  f.lockReason='';
+  logActivity('Form "'+f.title+'" unlocked via Form Lookup','green');
+  showLoading(true);await saveDB();showLoading(false);
+  lookupForm();
+}
+
+async function lookupToggleInvestigation(id){
+  const f=db.forms.find(x=>x.id===id);if(!f)return;
+  f.flagStatus=f.flagStatus==='investigation'?'':'investigation';
+  logActivity('Form "'+f.title+'" '+(f.flagStatus==='investigation'?'flagged for investigation':'investigation flag removed'),'yellow');
+  showLoading(true);await saveDB();showLoading(false);
+  lookupForm();
+}
+
+async function lookupDeleteForm(id){
+  const f=db.forms.find(x=>x.id===id);if(!f)return;
+  if(!confirm('PERMANENTLY delete "'+f.title+'" and all its submissions? This cannot be undone.'))return;
+  const title=f.title;
+  db.forms=db.forms.filter(x=>x.id!==id);
+  db.applications=(db.applications||[]).filter(a=>a.formId!==id);
+  logActivity('Form "'+title+'" permanently deleted via Form Lookup','red');
+  showLoading(true);await saveDB();showLoading(false);
+  document.getElementById('lookup-result').innerHTML='<div class="notice" style="border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);"><div class="notice-icon">&#10003;</div>Form permanently deleted.</div>';
+  document.getElementById('lookup-id-input').value='';
 }
 
 /* ══ BOOT ══ */
