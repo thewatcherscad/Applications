@@ -208,6 +208,7 @@ tr:last-child td{border-bottom:none;}
 .ticket-cat-badge.ban{background:rgba(239,68,68,0.12);color:var(--red);}
 .ticket-cat-badge.account{background:rgba(245,158,11,0.12);color:var(--yellow);}
 .ticket-cat-badge.bug{background:rgba(34,197,94,0.12);color:var(--green);}
+.ticket-cat-badge.supervisor{background:rgba(245,158,11,0.12);color:var(--yellow);}
 .ticket-info{flex:1;}
 .ticket-subject{font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:3px;}
 .ticket-meta{font-family:var(--mono);font-size:10px;color:var(--text-3);}
@@ -497,6 +498,7 @@ tr:last-child td{border-bottom:none;}
           <button class="cat-filter" onclick="filterTickets('ban',this)">Ban Appeal</button>
           <button class="cat-filter" onclick="filterTickets('account',this)">Account</button>
           <button class="cat-filter" onclick="filterTickets('bug',this)">Bug Report</button>
+          <button class="cat-filter" onclick="filterTickets('supervisor',this)">Supervisor Request</button>
           <button class="cat-filter" onclick="filterTickets('other',this)">Other</button>
         </div>
         <div id="admin-tickets-list"></div>
@@ -821,6 +823,7 @@ tr:last-child td{border-bottom:none;}
           <option value="ban">Ban Appeal</option>
           <option value="account">Account Issue</option>
           <option value="bug">Bug Report</option>
+          <option value="supervisor">Supervisor Request</option>
           <option value="other">Other</option>
         </select>
       </div>
@@ -1609,7 +1612,7 @@ async function submitApplication(){
 }
 
 /* ══ TICKETS ══ */
-const CAT_LABELS={general:'General',ban:'Ban Appeal',account:'Account',bug:'Bug Report',other:'Other'};
+const CAT_LABELS={general:'General',ban:'Ban Appeal',account:'Account',bug:'Bug Report',supervisor:'Supervisor Request',other:'Other'};
 let _ticketFilter='';
 function filterTickets(cat,el){
   _ticketFilter=cat;
