@@ -1389,6 +1389,7 @@ function renderUsers(){
       <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${esc(u.username)}')">Edit</button>
         ${u.role==='awaiting'?'<button class="btn btn-success btn-sm" onclick="openSvDecisionModal(this.dataset.u)" data-u="'+esc(u.username)+'">Decide</button>':''}
+        ${u.deleteAt?`<button class="btn btn-success btn-sm" onclick="cancelDeletion('${esc(u.username)}')">Cancel Deletion</button>`:''}
         ${u.status==='closed'
           ?`<button class="btn btn-success btn-sm" onclick="reopenAccount('${esc(u.username)}')">Reopen</button>`
           :u.role!=='awaiting'?`<button class="btn btn-warning btn-sm" onclick="openCloseAccountModal('${esc(u.username)}')">Close</button>`:''}
@@ -2581,6 +2582,14 @@ function updateMailBadge(){
   const navItem=document.getElementById('ap-nav-mail');
   if(badge){badge.style.display=unread?'inline':'none';badge.textContent=unread;}
   if(navItem)navItem.style.display='';
+}
+
+async function cancelDeletion(username){
+  const u=db.users.find(x=>x.username===username);if(!u)return;
+  delete u.deleteAt;
+  logActivity('Scheduled deletion cancelled for: '+username,'green');
+  showLoading(true);await saveDB();showLoading(false);
+  renderUsers();
 }
 
 /* ══ BOOT ══ */
