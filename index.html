@@ -330,6 +330,64 @@ tr:last-child td{border-bottom:none;}
 .loading-bar-fill{height:100%;background:var(--accent);border-radius:3px;animation:loadBar 1.5s ease-in-out infinite;}
 @keyframes loadBar{0%{width:0%;margin-left:0;}50%{width:60%;margin-left:20%;}100%{width:0%;margin-left:100%;}}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--text-3);border-radius:10px;}
+
+/* ══ FLOATING SUPPORT WIDGET ══ */
+#support-widget{position:fixed;bottom:24px;right:24px;z-index:9000;font-family:var(--sans);}
+#support-widget-btn{width:56px;height:56px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;box-shadow:0 4px 20px rgba(91,141,239,0.5);display:flex;align-items:center;justify-content:center;transition:transform 0.2s,box-shadow 0.2s;position:relative;}
+#support-widget-btn:hover{transform:scale(1.1);box-shadow:0 6px 28px rgba(91,141,239,0.65);}
+#support-widget-btn svg{width:24px;height:24px;fill:#fff;transition:opacity 0.2s;}
+#sw-unread-dot{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:var(--red);border:2px solid var(--bg-deep);display:none;font-family:var(--mono);font-size:8px;color:#fff;align-items:center;justify-content:center;}
+#sw-unread-dot.show{display:flex;}
+#support-widget-panel{position:absolute;bottom:68px;right:0;width:340px;background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.4);overflow:hidden;display:none;flex-direction:column;animation:swSlideUp 0.2s ease;}
+#support-widget-panel.open{display:flex;}
+@keyframes swSlideUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.sw-panel-header{background:var(--accent);padding:18px 20px;position:relative;}
+.sw-panel-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:rgba(255,255,255,0.1);}
+.sw-panel-title{font-size:15px;font-weight:700;color:#fff;margin-bottom:2px;}
+.sw-panel-sub{font-size:12px;color:rgba(255,255,255,0.75);}
+.sw-close-btn{position:absolute;top:14px;right:16px;background:rgba(255,255,255,0.15);border:none;color:#fff;width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:background 0.15s;}
+.sw-close-btn:hover{background:rgba(255,255,255,0.25);}
+.sw-body{padding:16px;}
+/* Step screens */
+.sw-step{display:none;}.sw-step.active{display:block;}
+.sw-label{font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.2em;color:var(--text-3);text-transform:uppercase;margin-bottom:10px;}
+/* Category grid */
+.sw-cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+.sw-cat-btn{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:10px;padding:12px 10px;cursor:pointer;text-align:center;transition:border-color 0.15s,background 0.15s;}
+.sw-cat-btn:hover{border-color:var(--accent);background:var(--accent-dim2);}
+.sw-cat-btn.selected{border-color:var(--accent);background:var(--accent-dim);}
+.sw-cat-icon{font-size:20px;margin-bottom:6px;}
+.sw-cat-name{font-size:11px;font-weight:600;color:var(--text-1);}
+/* Priority */
+.sw-priority-row{display:flex;gap:8px;margin-bottom:4px;}
+.sw-pri-btn{flex:1;padding:10px 6px;border-radius:8px;border:1px solid var(--border-dim);background:var(--bg-card);cursor:pointer;text-align:center;transition:all 0.15s;}
+.sw-pri-btn:hover{border-color:var(--border);}
+.sw-pri-btn.selected-low{border-color:var(--green);background:rgba(52,211,153,0.1);color:var(--green);}
+.sw-pri-btn.selected-medium{border-color:var(--yellow);background:rgba(251,191,36,0.1);color:var(--yellow);}
+.sw-pri-btn.selected-high{border-color:var(--red);background:rgba(248,113,113,0.1);color:var(--red);}
+.sw-pri-icon{font-size:16px;margin-bottom:4px;}
+.sw-pri-name{font-size:11px;font-weight:700;font-family:var(--mono);letter-spacing:0.08em;}
+/* Form fields */
+.sw-input{width:100%;background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:8px;padding:10px 12px;font-family:var(--sans);font-size:13px;color:var(--text-1);outline:none;margin-bottom:10px;transition:border-color 0.2s;}
+.sw-input:focus{border-color:var(--accent);}
+.sw-textarea{resize:none;min-height:80px;line-height:1.5;}
+.sw-submit-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px;font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.1em;cursor:pointer;transition:background 0.2s;}
+.sw-submit-btn:hover{background:#4a7de0;}
+.sw-back-btn{background:none;border:none;color:var(--text-3);font-size:12px;cursor:pointer;padding:0;margin-bottom:12px;display:flex;align-items:center;gap:4px;transition:color 0.15s;}
+.sw-back-btn:hover{color:var(--text-2);}
+/* Ticket list in widget */
+.sw-ticket-item{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s;}
+.sw-ticket-item:hover{border-color:var(--accent);}
+.sw-ticket-item.sw-unread{border-left:3px solid var(--accent);}
+.sw-ticket-subj{font-size:13px;font-weight:600;color:var(--text-1);margin-bottom:2px;}
+.sw-ticket-meta{font-family:var(--mono);font-size:10px;color:var(--text-3);}
+.sw-new-ticket-btn{width:100%;background:transparent;border:1px dashed var(--border);border-radius:8px;padding:10px;color:var(--text-2);font-size:13px;cursor:pointer;transition:all 0.15s;margin-top:4px;}
+.sw-new-ticket-btn:hover{border-color:var(--accent);color:var(--accent);}
+.sw-success{text-align:center;padding:20px 0;}
+.sw-success-icon{font-size:40px;margin-bottom:10px;}
+.sw-success-title{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:6px;}
+.sw-success-sub{font-size:12px;color:var(--text-2);}
+
 </style>
 </head>
 <body>
@@ -1200,7 +1258,7 @@ async function doRegister(){
 }
 function setAuthErr(prefix,msg){document.getElementById(prefix+'-error').textContent=msg;}
 function logout(){
-  currentUser=null;localStorage.removeItem('nx_session');stopPolling();
+  currentUser=null;localStorage.removeItem('nx_session');stopPolling();hideSupportWidget();if(_swOpen){_swOpen=false;document.getElementById('support-widget-panel').classList.remove('open');}
   document.getElementById('app').classList.remove('active');
   document.getElementById('supervisor-portal').style.display='none';
   document.getElementById('applicant-portal').classList.remove('active');
@@ -1271,6 +1329,7 @@ function launchAdmin(){
 }
 function launchApplicantPortal(){
   if(checkMaintenance())return;
+  showSupportWidget();
   document.getElementById('ap-username').textContent='⬡ '+currentUser.username.toUpperCase();
   document.getElementById('ap-welcome').textContent='Welcome, '+currentUser.username;
   document.getElementById('applicant-portal').classList.add('active');
@@ -2237,6 +2296,7 @@ async function pollDB(){
       renderUserTickets();
     }
     if(currentUser&&(currentUser.role==='user'||currentUser.role==='awaiting'))updateSupportBadge();
+    swUpdateUnreadDot();
     if(document.getElementById('sv-tickets-list')&&document.getElementById('sv-page-tickets').classList.contains('active')){
       svRenderTickets();
     }
@@ -2261,6 +2321,7 @@ let svQuestions=[],svQuestionCount=0;
 
 function launchSupervisorPortal(){
   if(checkMaintenance())return;
+  showSupportWidget();
   document.getElementById('sv-username').textContent='⬡ '+currentUser.username.toUpperCase();
   const svPortal=document.getElementById('supervisor-portal');
   svPortal.style.display='flex';
@@ -2484,6 +2545,7 @@ async function doSupervisorSignup(){
 }
 
 function launchAwaitingPortal(ticketId){
+  showSupportWidget();
   // Show a simple waiting screen with the live ticket
   document.getElementById('applicant-portal').classList.add('active');
   document.getElementById('ap-username').textContent='⬡ '+currentUser.username.toUpperCase();
@@ -2900,5 +2962,209 @@ function resendDecisionMail(username){
   }
   showAuth();
 })();
+
+/* ══ FLOATING SUPPORT WIDGET ══ */
+let _swOpen=false;
+let _swCat=null;
+let _swPri=null;
+
+function toggleSupportWidget(){
+  _swOpen=!_swOpen;
+  const panel=document.getElementById('support-widget-panel');
+  panel.classList.toggle('open',_swOpen);
+  if(_swOpen){swGoStep('home');swRenderTickets();}
+}
+
+function swGoStep(step){
+  document.querySelectorAll('.sw-step').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById('sw-step-'+step);
+  if(el)el.classList.add('active');
+  if(step==='cat'){
+    // Lock awaiting users to supervisor only
+    const isAwaiting=currentUser&&currentUser.role==='awaiting';
+    document.querySelectorAll('.sw-cat-btn').forEach(b=>{
+      if(isAwaiting&&b.dataset.cat!=='supervisor'){
+        b.style.opacity='0.3';b.style.pointerEvents='none';
+      } else {
+        b.style.opacity='';b.style.pointerEvents='';
+      }
+    });
+  }
+}
+
+function swSelectCat(btn){
+  document.querySelectorAll('.sw-cat-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  _swCat=btn.dataset.cat;
+  // If awaiting, skip priority and go straight to form
+  if(currentUser&&currentUser.role==='awaiting'){_swPri='medium';swGoStep('form');return;}
+  swGoStep('pri');
+}
+
+function swSelectPri(btn){
+  document.querySelectorAll('.sw-pri-btn').forEach(b=>{
+    b.classList.remove('selected-low','selected-medium','selected-high');
+  });
+  _swPri=btn.dataset.pri;
+  btn.classList.add('selected-'+_swPri);
+  setTimeout(()=>swGoStep('form'),220);
+}
+
+function swRenderTickets(){
+  if(!currentUser)return;
+  const myTickets=(db.tickets||[]).filter(t=>t.username===currentUser.username).reverse();
+  const el=document.getElementById('sw-tickets-list');
+  if(!myTickets.length){
+    el.innerHTML='<div style="text-align:center;padding:20px 0;color:var(--text-3);font-size:12px;">No tickets yet. Start one below.</div>';
+    return;
+  }
+  const priColors={low:'var(--green)',medium:'var(--yellow)',high:'var(--red)'};
+  const priIcons={low:'&#128994;',medium:'&#128993;',high:'&#128308;'};
+  el.innerHTML=myTickets.slice(0,5).map(function(t){
+    const hasUnread=t.messages&&t.messages.some(function(m){return m.from==='admin';});
+    const priHtml=t.priority?('<span style="font-size:10px;margin-left:4px;">'+priIcons[t.priority]+'</span>'):'';
+    const cls='sw-ticket-item'+(hasUnread?' sw-unread':'');
+    const sc=t.status==='open'?'var(--green)':'var(--text-3)';
+    return '<div class="'+cls+'" data-tid="'+t.id+'">'
+      +'<div class="sw-ticket-subj">'+esc(t.subject)+priHtml+'</div>'
+      +'<div class="sw-ticket-meta">#'+t.id+' &#183; <span style="color:'+sc+'">'+t.status+'</span> &#183; '+t.date+'</div>'
+      +'</div>';
+  }).join('');
+  el.querySelectorAll('[data-tid]').forEach(function(d){
+    d.addEventListener('click',function(){swOpenTicket(d.dataset.tid);});
+  });
+}
+
+function swOpenTicket(id){
+  // Close widget, navigate to support tab, open ticket
+  toggleSupportWidget();
+  if(currentUser.role==='supervisor'){
+    svNavigate('tickets',document.getElementById('sv-nav-tickets'));
+    setTimeout(()=>openUserTicket(id),200);
+  } else {
+    apNavigate('support',document.querySelectorAll('.ap-nav-item')[2]);
+    setTimeout(()=>openUserTicket(id),200);
+  }
+}
+
+async function swSubmitTicket(){
+  const subject=document.getElementById('sw-subject').value.trim();
+  const message=document.getElementById('sw-message').value.trim();
+  const errEl=document.getElementById('sw-error');
+  if(!subject||!message){errEl.textContent='Please fill in both fields.';return;}
+  if(!_swCat){errEl.textContent='Please select a category.';swGoStep('cat');return;}
+  errEl.textContent='';
+  if(!db.tickets)db.tickets=[];
+  const priLabel=_swPri?'['+_swPri.toUpperCase()+'] ':'';
+  const ticket={
+    id:'T'+Date.now(),
+    username:currentUser.username,
+    category:_swCat,
+    priority:_swPri||'medium',
+    subject:subject,
+    status:'open',
+    date:nowStr(),
+    messages:[{from:'user',text:priLabel+message,time:nowStr(),sender:currentUser.username,readByAdmin:false}]
+  };
+  db.tickets.push(ticket);
+  logActivity('New ticket from '+currentUser.username+': "'+subject+'" ['+(_swPri||'medium')+']','accent');
+  showLoading(true);await saveDB();showLoading(false);
+  document.getElementById('sw-subject').value='';
+  document.getElementById('sw-message').value='';
+  _swCat=null;_swPri=null;
+  document.querySelectorAll('.sw-cat-btn').forEach(b=>b.classList.remove('selected'));
+  document.querySelectorAll('.sw-pri-btn').forEach(b=>b.classList.remove('selected-low','selected-medium','selected-high'));
+  updateBadges();
+  swGoStep('success');
+}
+
+function swUpdateUnreadDot(){
+  if(!currentUser)return;
+  const unread=(db.tickets||[]).filter(t=>t.username===currentUser.username&&t.status==='open'&&t.messages&&t.messages.some(m=>m.from==='admin')).length;
+  const dot=document.getElementById('sw-unread-dot');
+  if(dot){dot.classList.toggle('show',unread>0);dot.textContent=unread>0?unread:'';}
+}
+
+function showSupportWidget(){
+  const w=document.getElementById('support-widget');
+  if(w)w.style.display='block';
+  swUpdateUnreadDot();
+}
+function hideSupportWidget(){
+  const w=document.getElementById('support-widget');
+  if(w)w.style.display='none';
+}
+
 </script>
+
+<!-- ══ FLOATING SUPPORT WIDGET ══ -->
+<div id="support-widget" style="display:none;">
+  <div id="support-widget-panel">
+    <div class="sw-panel-header">
+      <div class="sw-panel-title">Support</div>
+      <div class="sw-panel-sub" id="sw-panel-sub">How can we help you?</div>
+      <button class="sw-close-btn" onclick="toggleSupportWidget()">&#x2715;</button>
+    </div>
+    <div class="sw-body">
+
+      <!-- STEP 0: Ticket list / home -->
+      <div class="sw-step active" id="sw-step-home">
+        <div class="sw-label">Your Tickets</div>
+        <div id="sw-tickets-list"></div>
+        <button class="sw-new-ticket-btn" onclick="swGoStep('cat')">+ New Ticket</button>
+      </div>
+
+      <!-- STEP 1: Choose category -->
+      <div class="sw-step" id="sw-step-cat">
+        <button class="sw-back-btn" onclick="swGoStep('home')">&#8592; Back</button>
+        <div class="sw-label">What do you need help with?</div>
+        <div class="sw-cat-grid">
+          <div class="sw-cat-btn" data-cat="general" onclick="swSelectCat(this)"><div class="sw-cat-icon">&#128172;</div><div class="sw-cat-name">General</div></div>
+          <div class="sw-cat-btn" data-cat="ban" onclick="swSelectCat(this)"><div class="sw-cat-icon">&#128683;</div><div class="sw-cat-name">Ban Appeal</div></div>
+          <div class="sw-cat-btn" data-cat="account" onclick="swSelectCat(this)"><div class="sw-cat-icon">&#128100;</div><div class="sw-cat-name">Account</div></div>
+          <div class="sw-cat-btn" data-cat="bug" onclick="swSelectCat(this)"><div class="sw-cat-icon">&#128027;</div><div class="sw-cat-name">Bug Report</div></div>
+          <div class="sw-cat-btn" data-cat="supervisor" onclick="swSelectCat(this)"><div class="sw-cat-icon">&#11045;</div><div class="sw-cat-name">Supervisor</div></div>
+          <div class="sw-cat-btn" data-cat="other" onclick="swSelectCat(this)"><div class="sw-cat-icon">&#8230;</div><div class="sw-cat-name">Other</div></div>
+        </div>
+      </div>
+
+      <!-- STEP 2: Choose priority -->
+      <div class="sw-step" id="sw-step-pri">
+        <button class="sw-back-btn" onclick="swGoStep('cat')">&#8592; Back</button>
+        <div class="sw-label">Priority Level</div>
+        <div class="sw-priority-row">
+          <div class="sw-pri-btn" data-pri="low" onclick="swSelectPri(this)"><div class="sw-pri-icon">&#128994;</div><div class="sw-pri-name">LOW</div></div>
+          <div class="sw-pri-btn" data-pri="medium" onclick="swSelectPri(this)"><div class="sw-pri-icon">&#128993;</div><div class="sw-pri-name">MEDIUM</div></div>
+          <div class="sw-pri-btn" data-pri="high" onclick="swSelectPri(this)"><div class="sw-pri-icon">&#128308;</div><div class="sw-pri-name">HIGH</div></div>
+        </div>
+      </div>
+
+      <!-- STEP 3: Write ticket -->
+      <div class="sw-step" id="sw-step-form">
+        <button class="sw-back-btn" onclick="swGoStep('pri')">&#8592; Back</button>
+        <div class="sw-label">Describe your issue</div>
+        <input class="sw-input" id="sw-subject" placeholder="Subject (brief summary)">
+        <textarea class="sw-input sw-textarea" id="sw-message" placeholder="Describe your issue in detail..."></textarea>
+        <button class="sw-submit-btn" onclick="swSubmitTicket()">SUBMIT TICKET</button>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--red);margin-top:8px;min-height:14px;" id="sw-error"></div>
+      </div>
+
+      <!-- STEP 4: Success -->
+      <div class="sw-step" id="sw-step-success">
+        <div class="sw-success">
+          <div class="sw-success-icon">&#10003;</div>
+          <div class="sw-success-title">Ticket Submitted!</div>
+          <div class="sw-success-sub">Our team will respond shortly. You can view your ticket in the list.</div>
+        </div>
+        <button class="sw-submit-btn" onclick="swGoStep('home')">View My Tickets</button>
+      </div>
+
+    </div>
+  </div>
+  <button id="support-widget-btn" onclick="toggleSupportWidget()" title="Support">
+    <div id="sw-unread-dot"></div>
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+  </button>
+</div>
+
 </body></html>
