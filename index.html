@@ -425,6 +425,29 @@ tr:last-child td{border-bottom:none;}
 @keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 @keyframes toastOut{from{opacity:1;}to{opacity:0;transform:translateY(-6px);}}
 
+
+/* ══ MAINTENANCE MODAL ══ */
+#modal-maintenance-auth .modal::before{background:linear-gradient(90deg,transparent,var(--yellow),transparent);}
+.maint-danger-zone{background:rgba(248,113,113,0.05);border:1px solid rgba(248,113,113,0.2);border-radius:12px;padding:20px;margin-top:20px;}
+.maint-danger-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.25em;color:var(--red);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.maint-type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.maint-type-btn{background:var(--bg-card);border:1px solid var(--border-dim);border-radius:10px;padding:14px 12px;cursor:pointer;text-align:left;transition:border-color 0.15s,background 0.15s;}
+.maint-type-btn:hover{border-color:var(--yellow);background:rgba(251,191,36,0.06);}
+.maint-type-btn.selected{border-color:var(--yellow);background:rgba(251,191,36,0.1);}
+.maint-type-icon{font-size:20px;margin-bottom:6px;}
+.maint-type-name{font-size:12px;font-weight:700;color:var(--text-1);margin-bottom:2px;}
+.maint-type-desc{font-size:10px;color:var(--text-3);line-height:1.4;}
+.maint-status-bar{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:10px;margin-bottom:20px;}
+.maint-status-bar.online{background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.2);}
+.maint-status-bar.offline{background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.25);}
+.maint-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.maint-status-dot.green{background:var(--green);box-shadow:0 0 8px var(--green);}
+.maint-status-dot.red{background:var(--red);box-shadow:0 0 8px var(--red);}
+.maint-status-text{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:0.08em;}
+.maint-status-text.green{color:var(--green);}
+.maint-status-text.red{color:var(--red);}
+.maint-status-sub{font-size:11px;color:var(--text-3);margin-left:auto;font-family:var(--mono);}
+
 </style>
 </head>
 <body>
@@ -1136,12 +1159,39 @@ tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+
+<!-- Maintenance Auth Modal -->
+<div class="modal-overlay" id="modal-maintenance-auth">
+  <div class="modal" style="width:460px;border-color:rgba(245,158,11,0.3);">
+    <div class="modal-header">
+      <div class="modal-title" id="maint-auth-title" style="color:var(--yellow);">⚙ Enable Maintenance Mode</div>
+      <button class="modal-close" onclick="closeModal('modal-maintenance-auth')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="notice" style="border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.06);margin-bottom:20px;">
+        <div class="notice-icon">⚠️</div>
+        <span style="font-size:13px;">This action will <b>lock out all admins and users</b>. Only the portal owner account will retain access. Please verify your identity to continue.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Owner Password</label>
+        <input class="form-input" id="maint-auth-pass" type="password" placeholder="Enter your account password" autocomplete="off">
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--red);min-height:16px;" id="maint-auth-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-maintenance-auth')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitMaintenanceAuth()" id="maint-auth-btn">Confirm &amp; Enable</button>
+    </div>
+  </div>
+</div>
+
 <!-- MAINTENANCE SCREEN -->
 <div id="maintenance-screen" style="display:none;position:fixed;inset:0;z-index:9997;background:var(--bg-deep);align-items:center;justify-content:center;flex-direction:column;">
   <div style="background:var(--bg-panel);border:1px solid rgba(245,158,11,0.3);border-radius:16px;padding:52px 48px;width:560px;text-align:center;position:relative;max-width:95vw;">
     <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:60%;height:1px;background:linear-gradient(90deg,transparent,var(--yellow),transparent);"></div>
     <div style="font-size:52px;margin-bottom:20px;">⚙️</div>
-    <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--yellow);margin-bottom:10px;letter-spacing:0.05em;">UNDER MAINTENANCE</div>
+    <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--yellow);margin-bottom:6px;letter-spacing:0.05em;">UNDER MAINTENANCE</div>
+    <div id="maint-screen-type" style="font-family:var(--mono);font-size:10px;color:var(--yellow);letter-spacing:0.3em;margin-bottom:6px;opacity:0.7;">SCHEDULED MAINTENANCE</div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--text-3);letter-spacing:0.2em;margin-bottom:24px;">NEXUS PORTAL</div>
     <div id="maint-screen-reason" style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:16px 20px;font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:16px;text-align:left;">We are currently performing maintenance. Please check back shortly.</div>
     <div id="maint-screen-duration" style="font-family:var(--mono);font-size:12px;color:var(--text-3);letter-spacing:0.1em;margin-bottom:28px;"></div>
@@ -2133,41 +2183,103 @@ function renderChatMessages(containerId,messages,isUserView=false){
 function renderMaintenancePage(){
   const m=db.maintenance||{};
   const active=!!m.active;
-  document.getElementById('maint-status-title').textContent=active?'🔴 Maintenance Mode ACTIVE':'🟢 Portal is Online';
-  document.getElementById('maint-toggle-btn').textContent=active?'Disable Maintenance':'Enable Maintenance';
-  document.getElementById('maint-toggle-btn').className=active?'btn btn-success btn-sm':'btn btn-danger btn-sm';
-  document.getElementById('maint-active-notice').style.display=active?'flex':'none';
-  document.getElementById('maint-reason').value=m.reason||'';
-  document.getElementById('maint-duration').value=m.duration||'';
-  document.getElementById('maint-card').style.borderColor=active?'rgba(245,158,11,0.4)':'';
+  // Status bar
+  const bar=document.getElementById('maint-status-bar');
+  const dot=document.getElementById('maint-status-dot');
+  const title=document.getElementById('maint-status-title');
+  const sub=document.getElementById('maint-status-sub');
+  if(bar){bar.className='maint-status-bar '+(active?'offline':'online');}
+  if(dot){dot.className='maint-status-dot '+(active?'red':'green');}
+  if(title){title.className='maint-status-text '+(active?'red':'green');title.textContent=active?'PORTAL OFFLINE — MAINTENANCE ACTIVE':'PORTAL ONLINE';}
+  if(sub){sub.textContent=active?('Since '+nowStr()):'All systems operational';}
+  // Toggle button
+  const btn=document.getElementById('maint-toggle-btn');
+  if(btn){
+    btn.textContent=active?'⚙ Disable Maintenance Mode':'⚙ Enable Maintenance Mode';
+    btn.className=active?'btn btn-success':'btn btn-danger';
+    btn.onclick=active?disableMaintenance:openMaintenanceAuth;
+  }
+  // Fields
+  const notice=document.getElementById('maint-active-notice');
+  if(notice)notice.style.display=active?'flex':'none';
+  const reasonEl=document.getElementById('maint-reason');if(reasonEl)reasonEl.value=m.reason||'';
+  const durEl=document.getElementById('maint-duration');if(durEl)durEl.value=m.duration||'';
+  const typeEl=document.getElementById('maint-type');if(typeEl&&m.type)typeEl.value=m.type;
+  const notesEl=document.getElementById('maint-internal-notes');if(notesEl)notesEl.value=m.internalNotes||'';
+  const contactEl=document.getElementById('maint-contact');if(contactEl)contactEl.value=m.contact||'';
+  const backEl=document.getElementById('maint-back-at');if(backEl)backEl.value=m.backAt||'';
+  const card=document.getElementById('maintenance-card');if(card)card.style.borderColor=active?'rgba(245,158,11,0.3)':'';
 }
 async function saveMaintenance(){
   if(!db.maintenance)db.maintenance={};
   db.maintenance.reason=document.getElementById('maint-reason').value.trim();
   db.maintenance.duration=document.getElementById('maint-duration').value.trim();
+  const typeEl=document.getElementById('maint-type');if(typeEl)db.maintenance.type=typeEl.value;
+  const notesEl=document.getElementById('maint-internal-notes');if(notesEl)db.maintenance.internalNotes=notesEl.value.trim();
+  const contactEl=document.getElementById('maint-contact');if(contactEl)db.maintenance.contact=contactEl.value.trim();
+  const backEl=document.getElementById('maint-back-at');if(backEl)db.maintenance.backAt=backEl.value.trim();
   showLoading(true);await saveDB();showLoading(false);
+  showToast('Maintenance settings saved','success');
   document.getElementById('maint-saved').textContent='✓ Settings saved';
   setTimeout(()=>{document.getElementById('maint-saved').textContent='';},2000);
 }
-async function toggleMaintenance(){
+function openMaintenanceAuth(){
+  // Open password verification modal
+  document.getElementById('maint-auth-pass').value='';
+  document.getElementById('maint-auth-error').textContent='';
+  const active=!!(db.maintenance&&db.maintenance.active);
+  document.getElementById('maint-auth-title').textContent=active?'⚙ Disable Maintenance Mode':'⚙ Enable Maintenance Mode';
+  document.getElementById('maint-auth-btn').textContent=active?'Confirm & Disable':'Confirm & Enable';
+  document.getElementById('maint-auth-btn').className=active?'btn btn-success':'btn btn-danger';
+  openModal('modal-maintenance-auth');
+  setTimeout(()=>document.getElementById('maint-auth-pass').focus(),100);
+}
+async function submitMaintenanceAuth(){
+  const pass=document.getElementById('maint-auth-pass').value.trim();
+  const errEl=document.getElementById('maint-auth-error');
+  if(!pass){errEl.textContent='Password required.';return;}
+  // Verify against owner account
+  const owner=db.users.find(u=>u.username===currentUser.username&&u.role==='owner');
+  if(!owner||owner.password!==pass){errEl.textContent='Incorrect password. Access denied.';return;}
+  // Auth passed — toggle maintenance
   if(!db.maintenance)db.maintenance={};
   db.maintenance.active=!db.maintenance.active;
-  db.maintenance.reason=document.getElementById('maint-reason').value.trim()||db.maintenance.reason||'';
-  db.maintenance.duration=document.getElementById('maint-duration').value.trim()||db.maintenance.duration||'';
-  logActivity('Maintenance mode '+(db.maintenance.active?'ENABLED':'DISABLED'),db.maintenance.active?'yellow':'green');
+  // Save current field values
+  const reasonEl=document.getElementById('maint-reason');if(reasonEl)db.maintenance.reason=reasonEl.value.trim()||db.maintenance.reason||'';
+  const durEl=document.getElementById('maint-duration');if(durEl)db.maintenance.duration=durEl.value.trim()||db.maintenance.duration||'';
+  const typeEl=document.getElementById('maint-type');if(typeEl)db.maintenance.type=typeEl.value;
+  const notesEl=document.getElementById('maint-internal-notes');if(notesEl)db.maintenance.internalNotes=notesEl.value.trim();
+  const contactEl=document.getElementById('maint-contact');if(contactEl)db.maintenance.contact=contactEl.value.trim();
+  const backEl=document.getElementById('maint-back-at');if(backEl)db.maintenance.backAt=backEl.value.trim();
+  logActivity('Maintenance mode '+(db.maintenance.active?'ENABLED':'DISABLED')+' by owner',db.maintenance.active?'yellow':'green');
   showLoading(true);await saveDB();showLoading(false);
+  closeModal('modal-maintenance-auth');
   renderMaintenancePage();
+  showToast('Maintenance mode '+(db.maintenance.active?'enabled':'disabled'),db.maintenance.active?'info':'success');
 }
+async function disableMaintenance(){
+  openMaintenanceAuth();
+}
+async function toggleMaintenance(){openMaintenanceAuth();}
 function checkMaintenance(){
   const m=db.maintenance||{};
-  if(m.active&&currentUser&&currentUser.role!=='admin'&&currentUser.role!=='owner'){
-    // Show maintenance screen for non-admins
+  // Owner always bypasses; admins now locked out too
+  if(m.active&&currentUser&&currentUser.role!=='owner'){
     document.getElementById('app').classList.remove('active');
-  document.getElementById('supervisor-portal').style.display='none';
+    document.getElementById('supervisor-portal').style.display='none';
     document.getElementById('applicant-portal').classList.remove('active');
     document.getElementById('maintenance-screen').style.display='flex';
+    const typeLabels={scheduled:'Scheduled Maintenance',emergency:'Emergency Downtime',update:'System Update',security:'Security Patch',upgrade:'Infrastructure Upgrade',other:'Maintenance'};
+    const typeLabel=typeLabels[m.type]||'Maintenance';
     document.getElementById('maint-screen-reason').textContent=m.reason||'We are currently performing maintenance. Please check back shortly.';
-    document.getElementById('maint-screen-duration').textContent=m.duration?'⏱ '+m.duration:'';
+    const dur=[];
+    if(m.duration)dur.push('Duration: '+m.duration);
+    if(m.backAt)dur.push('Back: '+m.backAt);
+    if(m.contact)dur.push('Support: '+m.contact);
+    document.getElementById('maint-screen-duration').textContent=dur.join(' · ');
+    // Update maintenance screen type label
+    const typeEl=document.getElementById('maint-screen-type');
+    if(typeEl)typeEl.textContent=typeLabel.toUpperCase();
     return true;
   }
   document.getElementById('maintenance-screen').style.display='none';
