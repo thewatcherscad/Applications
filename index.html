@@ -981,7 +981,7 @@ async function doRegister(){
 }
 function setAuthErr(prefix,msg){document.getElementById(prefix+'-error').textContent=msg;}
 function logout(){
-  currentUser=null;localStorage.removeItem('nx_session');
+  currentUser=null;localStorage.removeItem('nx_session');stopPolling();
   document.getElementById('app').classList.remove('active');
   document.getElementById('applicant-portal').classList.remove('active');
   document.getElementById('public-app-page').classList.remove('open');
@@ -1047,7 +1047,7 @@ function applyRoleRestrictions(){
 function launchAdmin(){
   document.getElementById('topbar-username').textContent='⬡ '+currentUser.username.toUpperCase();
   document.getElementById('app').classList.add('active');
-  startClock();refreshAll();applyRoleRestrictions();
+  startClock();refreshAll();applyRoleRestrictions();startPolling();
 }
 function launchApplicantPortal(){
   if(checkMaintenance())return;
@@ -1057,6 +1057,7 @@ function launchApplicantPortal(){
   renderApplicantApps();
   renderUserTickets();
   renderUserAssignedForms();
+  startPolling();
 }
 
 /* ══ APPLICANT PORTAL NAV ══ */
@@ -1869,6 +1870,61 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('clic
 function esc(s){if(s==null)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function nowStr(){return new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});}
 function showErr(msg){console.error(msg);}
+
+/* ══ LIVE POLLING ══ */
+let _pollInterval=null;
+async function pollDB(){
+  try{
+    const r=await fetch(BIN_URL(),{headers:HEADERS()});
+    if(!r.ok)return;
+    const j=await r.json();
+    const fresh=j.record;
+    if(!fresh)return;
+    // Update tickets silently
+    const oldTicketCount=(db.tickets||[]).length;
+    const oldMsgCounts={};
+    (db.tickets||[]).forEach(t=>oldMsgCounts[t.id]=(t.messages||[]).length);
+    db.tickets=fresh.tickets||db.tickets;
+    db.transcripts=fresh.transcripts||db.transcripts;
+    // Update badges
+    updateBadges();
+    updateTranscriptBadge();
+    // If admin ticket modal is open, refresh messages silently
+    if(_openTicketId&&document.getElementById('modal-admin-ticket').classList.contains('open')){
+      const t=(db.tickets||[]).find(x=>x.id===_openTicketId);
+      if(t){
+        const newCount=(t.messages||[]).length;
+        if(newCount!==oldMsgCounts[_openTicketId]){
+          renderChatMessages('admin-chat-messages',t.messages||[]);
+        }
+      }
+    }
+    // If user ticket modal is open, refresh messages silently
+    if(_openTicketId&&document.getElementById('modal-user-ticket').classList.contains('open')){
+      const t=(db.tickets||[]).find(x=>x.id===_openTicketId);
+      if(t){
+        const newCount=(t.messages||[]).length;
+        if(newCount!==oldMsgCounts[_openTicketId]){
+          renderChatMessages('user-chat-messages',t.messages||[],true);
+        }
+      }
+    }
+    // If ticket list is visible, refresh it
+    if(document.getElementById('admin-tickets-list')&&document.getElementById('page-tickets').classList.contains('active')){
+      renderAdminTickets();
+    }
+    if(document.getElementById('user-tickets-list')&&document.getElementById('ap-page-support').classList.contains('active')){
+      renderUserTickets();
+    }
+  }catch(e){}
+}
+function startPolling(){
+  if(_pollInterval)clearInterval(_pollInterval);
+  _pollInterval=setInterval(pollDB,5000);
+}
+function stopPolling(){
+  if(_pollInterval){clearInterval(_pollInterval);_pollInterval=null;}
+}
 
 /* ══ BOOT ══ */
 (async function boot(){
