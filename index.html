@@ -391,6 +391,7 @@ tr:last-child td{border-bottom:none;}
       <div class="sidebar-divider"></div>
       <div class="nav-section-label">Management</div>
       <div class="nav-item" id="nav-forms" onclick="navigate('forms',this)"><span class="nav-icon">▣</span>Application Forms</div>
+      <div class="nav-item" id="nav-form-lookup" onclick="navigate('form-lookup',this)"><span class="nav-icon">🔍</span>Form Lookup</div>
       <div class="nav-item" id="nav-create-form" onclick="navigate('create-form',this)"><span class="nav-icon">✦</span>Create New Form</div>
       <div class="nav-item" id="nav-users" onclick="navigate('users',this)"><span class="nav-icon">◎</span>User Accounts<span class="nav-badge" id="badge-users">0</span></div>
       <div class="nav-item" id="nav-tickets" onclick="navigate('tickets',this)"><span class="nav-icon">💬</span>Support Tickets<span class="nav-badge red" id="badge-tickets">0</span></div>
@@ -453,6 +454,20 @@ tr:last-child td{border-bottom:none;}
         <div id="forms-grid"></div>
         <div class="empty-state" id="forms-empty" style="display:none"><div class="empty-state-icon">▣</div><h3>No forms yet</h3><p>Create your first application form.</p><button class="btn btn-primary" style="margin-top:16px;" onclick="navigate('create-form',document.getElementById('nav-create-form'))">Create Form</button></div>
 
+      </div>
+
+      <!-- FORM LOOKUP -->
+      <div class="page-section fade-in" id="page-form-lookup">
+        <div class="page-header"><div class="page-header-eyebrow">Management</div><h1>Form Lookup</h1><p>Enter a supervisor's form ID to view, lock/unlock, or edit it.</p></div>
+        <div class="card">
+          <div class="form-group"><label class="form-label">Form ID</label>
+            <div style="display:flex;gap:10px;">
+              <input class="form-input" id="lookup-id-input" placeholder="e.g. 1781655866732" style="font-family:var(--mono);">
+              <button class="btn btn-primary" onclick="lookupForm()">Look Up</button>
+            </div>
+          </div>
+          <div id="lookup-result"></div>
+        </div>
       </div>
 
       <!-- CREATE FORM -->
@@ -1211,6 +1226,7 @@ function refreshPage(page){
   if(page==='maintenance')renderMaintenancePage();
   if(page==='changelog'){renderChangelogAdmin();}
   if(page==='transcripts')renderTranscripts();
+  if(page==='form-lookup'){document.getElementById('lookup-id-input').value='';document.getElementById('lookup-result').innerHTML='';}
 }
 async function refreshAll(){showLoading(true);await loadDB();showLoading(false);updateBadges();renderDashboard();updateTranscriptBadge();}
 
@@ -1232,7 +1248,10 @@ function renderDashboard(){
   else recEl.innerHTML=recent.map(a=>`<div class="activity-item" style="cursor:pointer;" onclick="openViewModal(${a.id})"><div class="activity-dot ${a.status==='accepted'?'green':a.status==='rejected'?'red':''}"></div><div><div class="activity-text">${esc(a.applicantName)} — <span class="text-muted">${esc(a.formTitle)}</span></div><div class="activity-time">${a.date} · <span class="badge badge-${a.status}">${a.status}</span></div></div></div>`).join('');
   const formsEl=document.getElementById('active-forms-list');
   if(!db.forms.length)formsEl.innerHTML='<div class="empty-state" style="padding:30px 0;"><div class="empty-state-icon" style="font-size:24px;">▣</div><p>No forms yet</p></div>';
-  else formsEl.innerHTML=db.forms.slice(-5).reverse().map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;return`<div class="activity-item"><div class="activity-dot"></div><div style="flex:1;"><div class="activity-text">${esc(f.title)}</div><div class="activity-time">${esc(f.category)} · ${cnt} submission${cnt!==1?'s':''}</div></div><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button></div>`;}).join('');
+  const adminUsersD=(db.users||[]).filter(u=>u.role==='owner'||u.role==='admin').map(u=>u.username);
+  const dashForms=db.forms.filter(f=>!f.createdBy||f.createdBy==='owner'||adminUsersD.includes(f.createdBy));
+  if(!dashForms.length)formsEl.innerHTML='<div class="empty-state" style="padding:30px 0;"><div class="empty-state-icon" style="font-size:24px;">▣</div><p>No forms yet</p></div>';
+  else formsEl.innerHTML=dashForms.slice(-5).reverse().map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;return`<div class="activity-item"><div class="activity-dot"></div><div style="flex:1;"><div class="activity-text">${esc(f.title)}</div><div class="activity-time">${esc(f.category)} · ${cnt} submission${cnt!==1?'s':''}</div></div><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button></div>`;}).join('');
 }
 function updateBadges(){
   document.getElementById('badge-all').textContent=db.applications.length;
@@ -1426,9 +1445,12 @@ async function clearUserNote(){
 /* ══ FORMS ══ */
 function renderForms(){
   const el=document.getElementById('forms-grid');const empty=document.getElementById('forms-empty');
-  if(!db.forms.length){el.innerHTML='';empty.style.display='block';return;}
+  // Only show forms created by owner/admin — hide supervisor forms
+  const adminUsers=(db.users||[]).filter(u=>u.role==='owner'||u.role==='admin').map(u=>u.username);
+  const visibleForms=db.forms.filter(f=>!f.createdBy||f.createdBy==='owner'||adminUsers.includes(f.createdBy));
+  if(!visibleForms.length){el.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  el.innerHTML=db.forms.map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;const locked=f.locked;return`<div class="card" style="margin-bottom:16px;border-color:${locked?'rgba(239,68,68,0.3)':''}"><div class="card-header"><div><div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;font-weight:600;">🔒 LOCKED</span>':''}</div><div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="getFormLink(${f.id})">🔗 Link</button><button class="btn btn-success btn-sm" onclick="openSendFormModal(${f.id})">📤 Send</button><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button>${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="duplicateForm(${f.id})">⧉ Duplicate</button><button class="${locked?'btn btn-success':'btn btn-warning'} btn-sm" onclick="toggleFormLock(${f.id})">${locked?'🔓 Unlock':'🔒 Lock'}</button><button class="btn btn-danger btn-sm" onclick="deleteForm(${f.id})">Delete</button>`:''}</div></div><div style="font-size:13px;color:var(--text-2);line-height:1.6;">${esc((f.description||'').substring(0,160))}${(f.description||'').length>160?'…':''}</div></div>`;}).join('');
+  el.innerHTML=visibleForms.map(f=>{const cnt=db.applications.filter(a=>a.formId===f.id).length;const locked=f.locked;return`<div class="card" style="margin-bottom:16px;border-color:${locked?'rgba(239,68,68,0.3)':''}"><div class="card-header"><div><div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;font-weight:600;">🔒 LOCKED</span>':''}</div><div class="text-muted" style="margin-top:4px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions</div></div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="getFormLink(${f.id})">🔗 Link</button><button class="btn btn-success btn-sm" onclick="openSendFormModal(${f.id})">📤 Send</button><button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button>${isOwner()?`<button class="btn btn-ghost btn-sm" onclick="duplicateForm(${f.id})">⧉ Duplicate</button><button class="${locked?'btn btn-success':'btn btn-warning'} btn-sm" onclick="toggleFormLock(${f.id})">${locked?'🔓 Unlock':'🔒 Lock'}</button><button class="btn btn-danger btn-sm" onclick="deleteForm(${f.id})">Delete</button>`:''}</div></div><div style="font-size:13px;color:var(--text-2);line-height:1.6;">${esc((f.description||'').substring(0,160))}${(f.description||'').length>160?'…':''}</div></div>`;}).join('');
 }
 
 async function toggleFormLock(id){
@@ -2288,6 +2310,42 @@ function launchAwaitingPortal(ticketId){
   // Open the ticket automatically
   if(ticketId)setTimeout(()=>openUserTicket(ticketId),400);
   startPolling();
+}
+
+/* ══ FORM LOOKUP ══ */
+function lookupForm(){
+  const idStr=document.getElementById('lookup-id-input').value.trim();
+  const id=parseInt(idStr);
+  const el=document.getElementById('lookup-result');
+  if(!idStr){el.innerHTML='<div class="notice"><div class="notice-icon">⚠</div>Please enter a form ID.</div>';return;}
+  const f=db.forms.find(x=>x.id===id);
+  if(!f){el.innerHTML='<div class="notice" style="border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.08);"><div class="notice-icon">✕</div>No form found with that ID. Ask the supervisor to share their form ID from their portal.</div>';return;}
+  const cnt=(db.applications||[]).filter(a=>a.formId===f.id).length;
+  const locked=f.locked;
+  el.innerHTML=`
+    <div class="divider"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:4px;">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;">🔒 LOCKED</span>':''}</div>
+        <div class="text-muted" style="font-size:12px;">${esc(f.category)} · ${f.questions.length} questions · ${cnt} submissions · Created by: <b>${esc(f.createdBy||'owner')}</b></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-ghost btn-sm" onclick="openPublicForm(${f.id})">Preview</button>
+        <button class="btn ${locked?'btn-success':'btn-warning'} btn-sm" onclick="lookupToggleLock(${f.id})">${locked?'🔓 Unlock':'🔒 Lock'}</button>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--text-2);margin-bottom:16px;line-height:1.6;">${esc(f.description||'No description.')}</div>
+    <div style="font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:0.25em;color:var(--text-3);margin-bottom:12px;">QUESTIONS</div>
+    ${f.questions.map((q,i)=>'<div style="background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13px;color:var(--text-2);"><b style="color:var(--text-1);">Q'+(i+1)+'.</b> '+esc(q.label)+' <span style="font-family:var(--mono);font-size:10px;color:var(--text-3);">['+q.type+']</span></div>').join('')}
+  `;
+}
+
+async function lookupToggleLock(id){
+  const f=db.forms.find(x=>x.id===id);if(!f)return;
+  f.locked=!f.locked;
+  logActivity('Form "'+f.title+'" '+(f.locked?'locked':'unlocked')+' via Form Lookup',f.locked?'red':'green');
+  showLoading(true);await saveDB();showLoading(false);
+  lookupForm();
 }
 
 /* ══ BOOT ══ */
