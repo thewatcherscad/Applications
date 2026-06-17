@@ -409,6 +409,22 @@ tr:last-child td{border-bottom:none;}
 .user-menu-item-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
 .user-menu-divider{height:1px;background:var(--border-dim);margin:4px 0;}
 
+
+/* ══ SMOOTH PAGE TRANSITIONS ══ */
+@keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.page-section.active{animation:pageIn 0.22s ease;}
+.ap-page.active{animation:pageIn 0.22s ease;}
+#supervisor-portal .page-section.active{animation:pageIn 0.22s ease;}
+
+/* ══ TOAST NOTIFICATIONS ══ */
+#toast-container{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:99998;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
+.toast{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:10px;padding:10px 20px;font-family:var(--mono);font-size:12px;color:var(--text-1);box-shadow:0 4px 20px rgba(0,0,0,0.4);animation:toastIn 0.2s ease;letter-spacing:0.05em;display:flex;align-items:center;gap:8px;}
+.toast.success{border-color:rgba(52,211,153,0.3);color:var(--green);}
+.toast.error{border-color:rgba(248,113,113,0.3);color:var(--red);}
+.toast.info{border-color:var(--border);color:var(--text-1);}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toastOut{from{opacity:1;}to{opacity:0;transform:translateY(-6px);}}
+
 </style>
 </head>
 <body>
@@ -1730,7 +1746,7 @@ async function submitSendForm(){
   logActivity('Form "'+(form?form.title:_sendingFormId)+'" sent to '+username,'green');
   showLoading(true);await saveDB();showLoading(false);
   closeModal('modal-send-form');
-  alert('Form sent to '+username+' successfully!');
+  showToast('Form sent to '+username,'success');
 }
 
 /* RENDER USER ASSIGNED FORMS */
@@ -1810,7 +1826,7 @@ function addQOption(id,qArr,containerId){const q=qArr.find(x=>x.id===id);if(!q)r
 function removeQOption(id,i,qArr,containerId){const q=qArr.find(x=>x.id===id);if(!q||!q.options)return;q.options.splice(i,1);renderQOptions(id,containerId,qArr);}
 function updateQOption(id,i,val,qArr,containerId){const q=qArr.find(x=>x.id===id);if(q&&q.options)q.options[i]=val;}
 function removeQ(id){questions=questions.filter(q=>q.id!==id);document.getElementById('qfield-'+id)?.remove();}
-async function saveForm(){const title=document.getElementById('cf-title').value.trim();const category=document.getElementById('cf-category').value.trim();const desc=document.getElementById('cf-desc').value.trim();if(!title){alert('Please enter a form title.');return;}if(!questions.length){alert('Please add at least one question.');return;}const form={id:Date.now(),title,category,description:desc,questions:questions.map(q=>({label:q.label,type:q.type,options:q.options||null,scaleMin:q.scaleMin||null,scaleMax:q.scaleMax||null})),created:nowStr(),createdBy:currentUser?currentUser.username:'owner'};db.forms.push(form);logActivity(`New form: "${title}"`,'accent');showLoading(true);await saveDB();showLoading(false);navigate('forms',document.getElementById('nav-forms'));}
+async function saveForm(){const title=document.getElementById('cf-title').value.trim();const category=document.getElementById('cf-category').value.trim();const desc=document.getElementById('cf-desc').value.trim();if(!title){alert('Please enter a form title.');return;}if(!questions.length){alert('Please add at least one question.');return;}const form={id:Date.now(),title,category,description:desc,questions:questions.map(q=>({label:q.label,type:q.type,options:q.options||null,scaleMin:q.scaleMin||null,scaleMax:q.scaleMax||null})),created:nowStr(),createdBy:currentUser?currentUser.username:'owner'};db.forms.push(form);logActivity(`New form: "${title}"`,'accent');showLoading(true);await saveDB();showLoading(false);navigate('forms',document.getElementById('nav-forms'));clearFormDirty();}
 
 /* ══ FORM TEMPLATES ══ */
 const FORM_TEMPLATES={
@@ -1903,7 +1919,7 @@ async function duplicateForm(id){
 
 /* ══ FORM LINK ══ */
 function getFormLink(id){document.getElementById('link-input').value=`${location.origin}${location.pathname}?form=${id}`;document.getElementById('copy-confirm').textContent='';openModal('modal-link');}
-function copyLink(){navigator.clipboard.writeText(document.getElementById('link-input').value).then(()=>{document.getElementById('copy-confirm').textContent='✓ Link copied to clipboard';});}
+function copyLink(){navigator.clipboard.writeText(document.getElementById('link-input').value).then(()=>{showToast('Link copied to clipboard','success');document.getElementById('copy-confirm').textContent='';});}
 
 /* ══ PUBLIC FORM ══ */
 let pubFormId=null;
@@ -1976,7 +1992,7 @@ function renderAdminTickets(){
       <span class="ticket-cat-badge ${t.category}">${CAT_LABELS[t.category]||t.category}</span>
       <div class="ticket-info">
         <div class="ticket-subject">${esc(t.subject)}</div>
-        <div class="ticket-meta">#${t.id} · ${t.date} · ${t.messages?t.messages.length:0} messages</div>
+        <div class="ticket-meta">#${t.id} · ${relTime(t.date)} · ${t.messages?t.messages.length:0} messages</div>
       </div>
       <span class="badge ${t.status==='open'?'badge-accepted':'badge-pending'}">${t.status}</span>
       <div class="ticket-status-dot ${t.status}"></div>
@@ -2037,7 +2053,7 @@ function renderUserTickets(){
       <span class="ticket-cat-badge ${t.category}">${CAT_LABELS[t.category]||t.category}</span>
       <div class="ticket-info">
         <div class="ticket-subject">${esc(t.subject)}</div>
-        <div class="ticket-meta">#${t.id} · ${t.date} · ${t.messages?t.messages.length:0} messages</div>
+        <div class="ticket-meta">#${t.id} · ${relTime(t.date)} · ${t.messages?t.messages.length:0} messages</div>
       </div>
       <span class="badge ${t.status==='open'?'badge-accepted':'badge-pending'}">${t.status}</span>
     </div>`).join('');
@@ -2306,7 +2322,7 @@ async function deleteTicket(id){
 
 /* ══ ACTIVITY ══ */
 function logActivity(text,color='accent'){if(!db.activity)db.activity=[];db.activity.unshift({text,color,time:nowStr()});if(db.activity.length>200)db.activity.pop();}
-function renderActivity(){const el=document.getElementById('activity-log');if(!db.activity||!db.activity.length){el.innerHTML='<div class="empty-state"><div class="empty-state-icon">◈</div><h3>No activity yet</h3></div>';return;}el.innerHTML=db.activity.map(a=>`<div class="activity-item"><div class="activity-dot ${a.color==='green'?'green':a.color==='red'?'red':a.color==='yellow'?'yellow':''}"></div><div><div class="activity-text">${esc(a.text)}</div><div class="activity-time">${a.time}</div></div></div>`).join('');}
+function renderActivity(){const el=document.getElementById('activity-log');if(!db.activity||!db.activity.length){el.innerHTML='<div class="empty-state"><div class="empty-state-icon">◈</div><h3>No activity yet</h3></div>';return;}el.innerHTML=db.activity.map(a=>`<div class="activity-item"><div class="activity-dot ${a.color==='green'?'green':a.color==='red'?'red':a.color==='yellow'?'yellow':''}"></div><div><div class="activity-text">${esc(a.text)}</div><div class="activity-time">${relTime(a.time)}</div></div></div>`).join('');}
 
 /* ══ MODALS ══ */
 function openModal(id){document.getElementById(id).classList.add('open');}
@@ -2435,7 +2451,7 @@ function svRenderForms(){
           <div class="card-title">${esc(f.title)}${locked?'<span style="font-size:11px;color:var(--red);font-family:var(--mono);margin-left:10px;">&#128274; LOCKED</span>':''}${f.flagStatus==='investigation'?'<span style="font-size:11px;color:var(--yellow);font-family:var(--mono);margin-left:6px;">&#128270; UNDER INVESTIGATION</span>':''}</div>
           <div class="text-muted" style="margin-top:4px;">${esc(f.category)} &#183; ${f.questions.length} questions &#183; ${cnt} submissions</div>
           ${f.lockReason?'<div style="font-family:var(--mono);font-size:10px;color:var(--red);margin-top:4px;">Locked by portal: '+esc(f.lockReason)+'</div>':''}
-          <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:4px;">FORM ID: <span style="color:var(--accent);cursor:pointer;" onclick="navigator.clipboard.writeText('${f.id}').then(()=>alert('Form ID copied!'))">${f.id} — click to copy</span></div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:4px;">FORM ID: <span style="color:var(--accent);cursor:pointer;" onclick="navigator.clipboard.writeText('${f.id}').then(()=>showToast('Form ID copied','success'))">${f.id} — click to copy</span></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-ghost btn-sm" onclick="svGetFormLink(${f.id})">🔗 Link</button>
@@ -2508,7 +2524,7 @@ async function svSaveForm(){
   const form={id:Date.now(),title,category,description:desc,questions:svQuestions.map(q=>({label:q.label,type:q.type,options:q.options||null,scaleMin:q.scaleMin||null,scaleMax:q.scaleMax||null})),created:nowStr(),createdBy:currentUser.username};
   db.forms.push(form);
   showLoading(true);await saveDB();showLoading(false);
-  svNavigate('forms',document.getElementById('sv-nav-forms'));
+  svNavigate('forms',document.getElementById('sv-nav-forms'));clearFormDirty();
 }
 
 function svRenderResults(){
@@ -2555,7 +2571,7 @@ function svRenderTickets(){
       <span class="ticket-cat-badge ${t.category}">${CAT_LABELS[t.category]||t.category}</span>
       <div class="ticket-info">
         <div class="ticket-subject">${esc(t.subject)}</div>
-        <div class="ticket-meta">#${t.id} · ${t.date} · ${t.messages?t.messages.length:0} messages</div>
+        <div class="ticket-meta">#${t.id} · ${relTime(t.date)} · ${t.messages?t.messages.length:0} messages</div>
       </div>
       <span class="badge ${t.status==='open'?'badge-accepted':'badge-pending'}">${t.status}</span>
     </div>`).join('');
@@ -3207,6 +3223,55 @@ function setUserMenuInfo(){
   if(amr)amr.textContent=role;
 }
 
+
+/* ══ TOAST NOTIFICATIONS ══ */
+function showToast(msg, type='info', duration=2800){
+  const c=document.getElementById('toast-container');
+  if(!c)return;
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const icons={success:'✓',error:'✕',info:'ℹ'};
+  t.innerHTML='<span>'+icons[type]+'</span><span>'+msg+'</span>';
+  c.appendChild(t);
+  setTimeout(function(){
+    t.style.animation='toastOut 0.2s ease forwards';
+    setTimeout(function(){t.remove();},200);
+  },duration);
+}
+
+/* ══ RELATIVE TIMESTAMPS ══ */
+function relTime(dateStr){
+  if(!dateStr)return dateStr;
+  // Try to parse "17 Jun 2026, 21:14" format
+  try{
+    const d=new Date(dateStr.replace(',',''));
+    if(isNaN(d.getTime()))return dateStr;
+    const diff=Math.floor((Date.now()-d.getTime())/1000);
+    if(diff<60)return 'just now';
+    if(diff<3600)return Math.floor(diff/60)+'m ago';
+    if(diff<86400)return Math.floor(diff/3600)+'h ago';
+    if(diff<604800)return Math.floor(diff/86400)+'d ago';
+    return dateStr;
+  }catch(e){return dateStr;}
+}
+
+/* ══ CONFIRM ON TAB CLOSE ══ */
+let _formDirty=false;
+function markFormDirty(){_formDirty=true;}
+function clearFormDirty(){_formDirty=false;}
+window.addEventListener('beforeunload',function(e){
+  if(_formDirty){
+    e.preventDefault();
+    e.returnValue='You have unsaved changes. Are you sure you want to leave?';
+  }
+});
+// Track form builder changes
+document.addEventListener('input',function(e){
+  const inBuilder=e.target.closest('#questions-list,#sv-questions-list,#cf-title,#cf-category,#cf-desc,#sv-cf-title,#sv-cf-category,#sv-cf-desc');
+  if(inBuilder)markFormDirty();
+});
+// Clear dirty flag when forms are saved or cancelled
+
 </script>
 
 <!-- ══ FLOATING SUPPORT WIDGET ══ -->
@@ -3279,4 +3344,6 @@ function setUserMenuInfo(){
   </button>
 </div>
 
+
+<div id="toast-container"></div>
 </body></html>
