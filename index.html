@@ -448,6 +448,62 @@ tr:last-child td{border-bottom:none;}
 .maint-status-text.red{color:var(--red);}
 .maint-status-sub{font-size:11px;color:var(--text-3);margin-left:auto;font-family:var(--mono);}
 
+
+/* ══ ACTIVITY LOG v2 ══ */
+.al-layout{display:grid;grid-template-columns:280px 1fr;gap:20px;min-height:500px;}
+.al-users-panel{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:14px;overflow:hidden;}
+.al-users-header{padding:16px 18px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;justify-content:space-between;}
+.al-users-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.2em;color:var(--text-3);text-transform:uppercase;}
+.al-user-item{display:flex;align-items:center;gap:12px;padding:12px 18px;cursor:pointer;border-left:3px solid transparent;transition:background 0.12s,border-color 0.12s;}
+.al-user-item:hover{background:var(--bg-hover);}
+.al-user-item.active{background:var(--accent-dim2);border-left-color:var(--accent);}
+.al-user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.al-user-avatar.green{background:rgba(52,211,153,0.12);color:var(--green);border-color:rgba(52,211,153,0.3);}
+.al-user-avatar.red{background:rgba(248,113,113,0.12);color:var(--red);border-color:rgba(248,113,113,0.3);}
+.al-user-avatar.yellow{background:rgba(251,191,36,0.12);color:var(--yellow);border-color:rgba(251,191,36,0.3);}
+.al-user-name{font-size:13px;font-weight:600;color:var(--text-1);}
+.al-user-meta{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:2px;}
+.al-user-count{margin-left:auto;background:var(--bg-card);border:1px solid var(--border-dim);border-radius:10px;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--text-2);padding:2px 8px;flex-shrink:0;}
+.al-feed{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;}
+.al-feed-header{padding:18px 24px;border-bottom:1px solid var(--border-dim);display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.al-feed-avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.al-feed-name{font-size:15px;font-weight:700;color:var(--text-1);}
+.al-feed-role{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:0.15em;text-transform:uppercase;margin-top:2px;}
+.al-feed-stats{margin-left:auto;display:flex;gap:20px;}
+.al-stat{text-align:center;}
+.al-stat-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text-1);}
+.al-stat-lbl{font-family:var(--mono);font-size:9px;color:var(--text-3);letter-spacing:0.15em;text-transform:uppercase;margin-top:2px;}
+.al-filter-bar{display:flex;gap:6px;padding:12px 24px;border-bottom:1px solid var(--border-dim);flex-wrap:wrap;}
+.al-filter-btn{padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border-dim);color:var(--text-2);background:transparent;font-family:var(--mono);letter-spacing:0.08em;transition:all 0.15s;}
+.al-filter-btn:hover{border-color:var(--border);color:var(--text-1);}
+.al-filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.al-filter-btn.green.active{background:var(--green);border-color:var(--green);}
+.al-filter-btn.red.active{background:var(--red);border-color:var(--red);}
+.al-filter-btn.yellow.active{background:var(--yellow);border-color:var(--yellow);}
+.al-entries{flex:1;overflow-y:auto;padding:8px 0;max-height:560px;}
+.al-entry{display:flex;gap:14px;padding:10px 24px;border-bottom:1px solid rgba(255,255,255,0.03);transition:background 0.1s;}
+.al-entry:hover{background:var(--bg-hover);}
+.al-entry:last-child{border-bottom:none;}
+.al-entry-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;box-shadow:0 0 6px var(--accent);}
+.al-entry-dot.green{background:var(--green);box-shadow:0 0 6px var(--green);}
+.al-entry-dot.red{background:var(--red);box-shadow:0 0 6px var(--red);}
+.al-entry-dot.yellow{background:var(--yellow);box-shadow:0 0 6px var(--yellow);}
+.al-entry-text{font-size:13px;color:var(--text-1);line-height:1.5;}
+.al-entry-time{font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:3px;}
+.al-entry-tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-left:8px;vertical-align:middle;}
+.al-entry-tag.login{background:rgba(91,141,239,0.12);color:var(--accent);}
+.al-entry-tag.app{background:rgba(52,211,153,0.12);color:var(--green);}
+.al-entry-tag.ticket{background:rgba(251,191,36,0.12);color:var(--yellow);}
+.al-entry-tag.account{background:rgba(248,113,113,0.12);color:var(--red);}
+.al-entry-tag.form{background:rgba(91,141,239,0.1);color:var(--accent);}
+.al-entry-tag.system{background:rgba(139,149,169,0.12);color:var(--text-2);}
+.al-global-view{padding:24px;}
+.al-day-group{margin-bottom:24px;}
+.al-day-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.25em;color:var(--text-3);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-dim);}
+.al-search{background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:8px;padding:8px 14px;font-family:var(--sans);font-size:13px;color:var(--text-1);outline:none;width:200px;transition:border-color 0.2s;}
+.al-search:focus{border-color:var(--accent);}
+.al-empty{text-align:center;padding:40px 20px;color:var(--text-3);font-size:13px;}
+
 </style>
 </head>
 <body>
@@ -775,8 +831,36 @@ tr:last-child td{border-bottom:none;}
 
       <!-- ACTIVITY -->
       <div class="page-section fade-in" id="page-activity">
-        <div class="page-header"><div class="page-header-eyebrow">System</div><h1>Activity Log</h1><p>All admin actions, registrations, and submissions.</p></div>
-        <div class="card" id="activity-log"></div>
+        <div class="page-header">
+          <div class="page-header-eyebrow">System</div>
+          <h1>Activity Log</h1>
+          <p>Per-user activity profiles. Click a user to see their full history.</p>
+        </div>
+        <div class="al-layout">
+          <!-- LEFT: user list -->
+          <div class="al-users-panel">
+            <div class="al-users-header">
+              <div class="al-users-title">Users</div>
+              <button class="al-filter-btn active" id="al-global-btn" onclick="alShowGlobal()" style="font-size:10px;padding:3px 10px;">All Activity</button>
+            </div>
+            <div id="al-users-list"></div>
+          </div>
+          <!-- RIGHT: feed -->
+          <div class="al-feed" id="al-feed">
+            <div id="al-feed-header-area"></div>
+            <div class="al-filter-bar" id="al-filter-bar">
+              <button class="al-filter-btn active" onclick="alFilter('all',this)">All</button>
+              <button class="al-filter-btn" onclick="alFilter('login',this)">Logins</button>
+              <button class="al-filter-btn green" onclick="alFilter('app',this)">Applications</button>
+              <button class="al-filter-btn" onclick="alFilter('ticket',this)">Tickets</button>
+              <button class="al-filter-btn red" onclick="alFilter('account',this)">Account</button>
+              <button class="al-filter-btn" onclick="alFilter('form',this)">Forms</button>
+              <button class="al-filter-btn yellow" onclick="alFilter('system',this)">System</button>
+              <input class="al-search" id="al-search" placeholder="Search logs..." oninput="alRenderFeed()">
+            </div>
+            <div class="al-entries" id="al-entries"></div>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -1253,6 +1337,16 @@ tr:last-child td{border-bottom:none;}
       <button class="btn btn-ghost" onclick="closeModal('modal-sv-decision')">Cancel</button>
       <button class="btn btn-primary" onclick="submitSvDecision()">Send Decision</button>
     </div>
+  </div>
+</div>
+
+
+<!-- User Profile Log Modal -->
+<div class="modal-overlay" id="modal-user-log">
+  <div class="modal" style="width:680px;">
+    <div class="modal-header"><div class="modal-title" id="ul-modal-title">User Activity</div><button class="modal-close" onclick="closeModal('modal-user-log')">✕</button></div>
+    <div class="modal-body" id="ul-modal-body"></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-user-log')">Close</button></div>
   </div>
 </div>
 
@@ -2432,9 +2526,186 @@ async function deleteTicket(id){
   updateBadges();updateTranscriptBadge();renderAdminTickets();
 }
 
-/* ══ ACTIVITY ══ */
-function logActivity(text,color='accent'){if(!db.activity)db.activity=[];db.activity.unshift({text,color,time:nowStr()});if(db.activity.length>200)db.activity.pop();}
-function renderActivity(){const el=document.getElementById('activity-log');if(!db.activity||!db.activity.length){el.innerHTML='<div class="empty-state"><div class="empty-state-icon">◈</div><h3>No activity yet</h3></div>';return;}el.innerHTML=db.activity.map(a=>`<div class="activity-item"><div class="activity-dot ${a.color==='green'?'green':a.color==='red'?'red':a.color==='yellow'?'yellow':''}"></div><div><div class="activity-text">${esc(a.text)}</div><div class="activity-time">${relTime(a.time)}</div></div></div>`).join('');}
+/* ══ ACTIVITY LOG v2 ══ */
+
+/* Enhanced logActivity — tags entries and optionally associates a username */
+function logActivity(text, color='accent', username=null){
+  if(!db.activity)db.activity=[];
+  // Auto-detect username from text if not provided
+  if(!username && currentUser) username = currentUser.username;
+  // Auto-detect category tag
+  const tag = alDetectTag(text);
+  db.activity.unshift({text, color, time:nowStr(), username: username||null, tag});
+  if(db.activity.length>500)db.activity.pop();
+}
+
+function alDetectTag(text){
+  const t=text.toLowerCase();
+  if(t.includes('logged in')||t.includes('login'))return 'login';
+  if(t.includes('application')||t.includes('submitted'))return 'app';
+  if(t.includes('ticket'))return 'ticket';
+  if(t.includes('account')||t.includes('registered')||t.includes('closed')||t.includes('deleted')||t.includes('reopened')||t.includes('supervisor request'))return 'account';
+  if(t.includes('form'))return 'form';
+  if(t.includes('maintenance')||t.includes('changelog')||t.includes('auto-deleted'))return 'system';
+  return 'system';
+}
+
+function alGetUserColor(u){
+  if(!u)return '';
+  const role=(db.users.find(x=>x.username===u)||{}).role||'';
+  if(role==='owner'||role==='admin')return '';
+  if(role==='supervisor')return 'yellow';
+  if(role==='awaiting')return 'yellow';
+  return '';
+}
+
+// Which user profile is selected; null = global
+let _alSelectedUser=null;
+let _alFilterTag='all';
+
+function renderActivity(){
+  // Build user list
+  alRenderUserList();
+  // Default: show global feed
+  alShowGlobal();
+}
+
+function alRenderUserList(){
+  const el=document.getElementById('al-users-list');
+  if(!el)return;
+  // Collect all usernames that appear in activity
+  const actUsers={};
+  (db.activity||[]).forEach(a=>{
+    if(a.username){
+      if(!actUsers[a.username])actUsers[a.username]=0;
+      actUsers[a.username]++;
+    }
+  });
+  // Also include all registered users even if no activity yet
+  (db.users||[]).forEach(u=>{
+    if(!actUsers[u.username])actUsers[u.username]=0;
+  });
+  // Sort by activity count desc
+  const sorted=Object.entries(actUsers).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){el.innerHTML='<div class="al-empty">No users yet</div>';return;}
+  el.innerHTML=sorted.map(([uname,cnt])=>{
+    const uobj=(db.users||[]).find(x=>x.username===uname)||{};
+    const initial=uname[0].toUpperCase();
+    const colorClass=uobj.role==='supervisor'||uobj.role==='awaiting'?'yellow':uobj.role==='owner'||uobj.role==='admin'?'':'';
+    const isActive=_alSelectedUser===uname;
+    return `<div class="al-user-item${isActive?' active':''}" onclick="alSelectUser('${esc(uname)}')">
+      <div class="al-user-avatar ${colorClass}">${initial}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="al-user-name">${esc(uname)}</div>
+        <div class="al-user-meta">${uobj.role||'unknown'}</div>
+      </div>
+      <div class="al-user-count">${cnt}</div>
+    </div>`;
+  }).join('');
+}
+
+function alSelectUser(username){
+  _alSelectedUser=username;
+  // Update active state
+  document.querySelectorAll('.al-user-item').forEach(el=>{
+    el.classList.toggle('active', el.querySelector('.al-user-name')&&el.querySelector('.al-user-name').textContent===username);
+  });
+  document.getElementById('al-global-btn').classList.remove('active');
+  alRenderFeed();
+}
+
+function alShowGlobal(){
+  _alSelectedUser=null;
+  document.querySelectorAll('.al-user-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('al-global-btn').classList.add('active');
+  alRenderFeed();
+}
+
+function alFilter(tag, btn){
+  _alFilterTag=tag;
+  document.querySelectorAll('.al-filter-btn').forEach(b=>{
+    if(b.id!=='al-global-btn')b.classList.remove('active');
+  });
+  if(btn)btn.classList.add('active');
+  alRenderFeed();
+}
+
+function alRenderFeed(){
+  const headerArea=document.getElementById('al-feed-header-area');
+  const entriesEl=document.getElementById('al-entries');
+  const searchVal=(document.getElementById('al-search')||{}).value||'';
+
+  let entries=db.activity||[];
+
+  if(_alSelectedUser){
+    // Filter to this user
+    entries=entries.filter(a=>a.username===_alSelectedUser);
+    // Render profile header
+    const u=(db.users||[]).find(x=>x.username===_alSelectedUser)||{};
+    const apps=(db.applications||[]).filter(a=>a.submittedBy===_alSelectedUser).length;
+    const tickets=(db.tickets||[]).filter(t=>t.username===_alSelectedUser).length;
+    const initial=_alSelectedUser[0].toUpperCase();
+    const colorClass=u.role==='supervisor'||u.role==='awaiting'?'yellow':'';
+    headerArea.innerHTML=`
+      <div class="al-feed-header">
+        <div class="al-feed-avatar ${colorClass}">${initial}</div>
+        <div>
+          <div class="al-feed-name">${esc(_alSelectedUser)}</div>
+          <div class="al-feed-role">${u.role||'unknown'} · Joined ${u.created||'—'}</div>
+        </div>
+        <div class="al-feed-stats">
+          <div class="al-stat"><div class="al-stat-val">${entries.length}</div><div class="al-stat-lbl">Events</div></div>
+          <div class="al-stat"><div class="al-stat-val">${apps}</div><div class="al-stat-lbl">Apps</div></div>
+          <div class="al-stat"><div class="al-stat-val">${tickets}</div><div class="al-stat-lbl">Tickets</div></div>
+        </div>
+      </div>`;
+  } else {
+    // Global — show summary header
+    const totalUsers=(db.users||[]).length;
+    const totalEvents=(db.activity||[]).length;
+    headerArea.innerHTML=`
+      <div class="al-feed-header">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <div class="al-feed-name">All Activity</div>
+          <div class="al-feed-role">Complete portal event log — newest first</div>
+        </div>
+        <div class="al-feed-stats">
+          <div class="al-stat"><div class="al-stat-val">${totalEvents}</div><div class="al-stat-lbl">Total Events</div></div>
+          <div class="al-stat"><div class="al-stat-val">${totalUsers}</div><div class="al-stat-lbl">Users</div></div>
+        </div>
+      </div>`;
+  }
+
+  // Apply tag filter
+  if(_alFilterTag && _alFilterTag!=='all'){
+    entries=entries.filter(a=>a.tag===_alFilterTag);
+  }
+  // Apply search
+  if(searchVal){
+    const sv=searchVal.toLowerCase();
+    entries=entries.filter(a=>a.text.toLowerCase().includes(sv));
+  }
+
+  if(!entries.length){
+    entriesEl.innerHTML='<div class="al-empty">No activity matching filters.</div>';
+    return;
+  }
+
+  entriesEl.innerHTML=entries.map(a=>{
+    const dotClass=a.color==='green'?'green':a.color==='red'?'red':a.color==='yellow'?'yellow':'';
+    const tag=a.tag||'system';
+    const tagColors={login:'login',app:'app',ticket:'ticket',account:'account',form:'form',system:'system'};
+    const tagLabels={login:'LOGIN',app:'APP',ticket:'TICKET',account:'ACCOUNT',form:'FORM',system:'SYSTEM'};
+    const userChip=(!_alSelectedUser&&a.username)?`<span style="font-family:var(--mono);font-size:10px;color:var(--accent);background:var(--accent-dim2);border:1px solid var(--border);border-radius:4px;padding:1px 7px;margin-left:6px;cursor:pointer;" onclick="alSelectUser('${esc(a.username)}')">${esc(a.username)}</span>`:'';
+    return `<div class="al-entry">
+      <div class="al-entry-dot ${dotClass}"></div>
+      <div style="flex:1;">
+        <div class="al-entry-text">${esc(a.text)}${userChip}<span class="al-entry-tag ${tagColors[tag]}">${tagLabels[tag]||tag}</span></div>
+        <div class="al-entry-time">${relTime(a.time)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
 /* ══ MODALS ══ */
 function openModal(id){document.getElementById(id).classList.add('open');}
