@@ -720,6 +720,7 @@ tr:last-child td{border-bottom:none;}
       <div class="nav-item" id="sv-nav-updates" onclick="svNavigate('updates',this)"><span class="nav-icon">📢</span>Updates</div>
       <div class="sidebar-divider"></div>
       <div class="nav-section-label">Support</div>
+      <div class="nav-item" id="sv-nav-mail" onclick="svNavigate('mail',this)"><span class="nav-icon">✉</span>Mail<span id="sv-mail-badge" style="margin-left:auto;background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:none;">0</span></div>
       <div class="nav-item" id="sv-nav-tickets" onclick="svNavigate('tickets',this)"><span class="nav-icon">💬</span>My Tickets</div>
     </div>
     <div class="content">
@@ -757,6 +758,11 @@ tr:last-child td{border-bottom:none;}
       <div class="page-section fade-in" id="sv-page-updates">
         <div class="page-header"><div class="page-header-eyebrow">Supervisor</div><h1>Updates</h1><p>Latest announcements from the portal owner.</p></div>
         <div id="sv-cl-list"></div>
+      </div>
+      <!-- SV MAIL -->
+      <div class="page-section fade-in" id="sv-page-mail">
+        <div class="page-header"><div class="page-header-eyebrow">Supervisor</div><h1>Mail</h1><p>Official messages from the portal owner.</p></div>
+        <div id="sv-mail-list"></div>
       </div>
       <!-- SV TICKETS -->
       <div class="page-section fade-in" id="sv-page-tickets">
@@ -1420,6 +1426,7 @@ function renderUsers(){
       <td><div style="display:flex;gap:6px;flex-wrap:wrap;">
         <button class="btn btn-ghost btn-sm" onclick="openEditUserModal('${esc(u.username)}')">Edit</button>
         ${u.role==='awaiting'?`<button class="btn btn-success btn-sm" onclick="openSvDecisionModal(this.getAttribute('data-u'))" data-u="${esc(u.username)}">Decide</button>`:''}
+        ${(u.role==='supervisor'||u.role==='user')&&(db.mail||[]).some(m=>m.to===u.username)?`<button class="btn btn-ghost btn-sm" onclick="resendDecisionMail('${esc(u.username)}')">Re-send Mail</button>`:''}
         ${u.deleteAt?`<button class="btn btn-success btn-sm" onclick="cancelDeletion('${esc(u.username)}')">Cancel Deletion</button>`:''}
         ${u.status==='closed'
           ?`<button class="btn btn-success btn-sm" onclick="reopenAccount('${esc(u.username)}')">Reopen</button>`
@@ -1574,7 +1581,7 @@ async function submitSendForm(){
   const already=db.assignedForms.find(a=>a.formId===_sendingFormId&&a.username===username);
   if(already){document.getElementById('sf-error').textContent='This form is already assigned to that user.';return;}
   const form=db.forms.find(f=>f.id===_sendingFormId);
-  db.assignedForms.push({formId:_sendingFormId,username,assignedAt:nowStr(),formTitle:form?form.title:'Unknown'});
+  db.assignedForms.push({formId:_sendingFormId,username,assignedAt:nowStr(),formTitle:form?form.title:'Unknown',filledBy:null,filledAt:null});
   logActivity('Form "'+(form?form.title:_sendingFormId)+'" sent to '+username,'green');
   showLoading(true);await saveDB();showLoading(false);
   closeModal('modal-send-form');
@@ -1613,7 +1620,7 @@ function renderUserAssignedForms(){
 }
 let questions=[],questionCount=0;
 function initCreateForm(){questions=[];questionCount=0;['cf-title','cf-category','cf-desc'].forEach(id=>document.getElementById(id).value='');document.getElementById('questions-list').innerHTML='';addQuestion('What is your in-game name / username?','text');addQuestion('How old are you?','text');addQuestion('Tell us about yourself and your experience.','textarea');addQuestion('Why do you want to join?','textarea');addQuestion('How many hours per week can you commit?','text');}
-function addQuestion(label='',type='text'){questionCount++;const id=questionCount;questions.push({id,label,type});const el=document.createElement('div');el.className='form-builder-field';el.id='qfield-'+id;el.innerHTML=`<div style="color:var(--text-3);font-size:18px;padding-top:20px;cursor:grab;">&#10783;</div><div class="fb-field-body"><div class="form-row" style="margin-bottom:0;"><div><label class="form-label" style="font-size:9px;">Question Label</label><input class="form-input" style="font-size:12px;" value="${esc(label)}" placeholder="Enter question…" oninput="updateQ(${id},'label',this.value)"></div><div><label class="form-label" style="font-size:9px;">Field Type</label><select class="form-select" style="font-size:12px;" onchange="updateQ(${id},'type',this.value)"><option value="text" ${type==='text'?'selected':''}>Short Text</option><option value="textarea" ${type==='textarea'?'selected':''}>Long Text</option><option value="number" ${type==='number'?'selected':''}>Number</option><option value="date" ${type==='date'?'selected':''}>Date Picker</option><option value="time" ${type==='time'?'selected':''}>Time Picker</option><option value="datetime" ${type==='datetime'?'selected':''}>Date &amp; Time</option><option value="yesno" ${type==='yesno'?'selected':''}>Yes / No</option><option value="truefalse" ${type==='truefalse'?'selected':''}>True / False</option><option value="radio" ${type==='radio'?'selected':''}>Multiple Choice</option><option value="checkbox" ${type==='checkbox'?'selected':''}>Checkboxes</option><option value="dropdown" ${type==='dropdown'?'selected':''}>Dropdown Menu</option><option value="scale" ${type==='scale'?'selected':''}>Linear Scale</option><option value="stars" ${type==='stars'?'selected':''}>Star Rating</option><option value="section" ${type==='section'?'selected':''}>Section Header</option><option value="description" ${type==='description'?'selected':''}>Description Block</option></select></div></div><div id="qopts-${id}" style="margin-top:8px;"></div></div><button class="btn btn-danger btn-sm" onclick="removeQ(${id})" style="margin-top:8px;">&#x2715;</button>`;document.getElementById('questions-list').appendChild(el);}
+function addQuestion(label='',type='text'){questionCount++;const id=questionCount;questions.push({id,label,type});const el=document.createElement('div');el.className='form-builder-field';el.id='qfield-'+id;el.innerHTML=`<div style="color:var(--text-3);font-size:18px;padding-top:20px;cursor:grab;">&#10783;</div><div class="fb-field-body"><div class="form-row" style="margin-bottom:0;"><div><label class="form-label" style="font-size:9px;">Question Label</label><input class="form-input" style="font-size:12px;" value="${esc(label)}" placeholder="Enter question…" maxlength="120" oninput="updateQ(${id},'label',this.value)"></div><div><label class="form-label" style="font-size:9px;">Field Type</label><select class="form-select" style="font-size:12px;" onchange="updateQ(${id},'type',this.value)"><option value="text" ${type==='text'?'selected':''}>Short Text</option><option value="textarea" ${type==='textarea'?'selected':''}>Long Text</option><option value="number" ${type==='number'?'selected':''}>Number</option><option value="date" ${type==='date'?'selected':''}>Date Picker</option><option value="time" ${type==='time'?'selected':''}>Time Picker</option><option value="datetime" ${type==='datetime'?'selected':''}>Date &amp; Time</option><option value="yesno" ${type==='yesno'?'selected':''}>Yes / No</option><option value="truefalse" ${type==='truefalse'?'selected':''}>True / False</option><option value="radio" ${type==='radio'?'selected':''}>Multiple Choice</option><option value="checkbox" ${type==='checkbox'?'selected':''}>Checkboxes</option><option value="dropdown" ${type==='dropdown'?'selected':''}>Dropdown Menu</option><option value="scale" ${type==='scale'?'selected':''}>Linear Scale</option><option value="stars" ${type==='stars'?'selected':''}>Star Rating</option><option value="section" ${type==='section'?'selected':''}>Section Header</option><option value="description" ${type==='description'?'selected':''}>Description Block</option></select></div></div><div id="qopts-${id}" style="margin-top:8px;"></div></div><button class="btn btn-danger btn-sm" onclick="removeQ(${id})" style="margin-top:8px;">&#x2715;</button>`;document.getElementById('questions-list').appendChild(el);}
 function updateQ(id,key,val){
   const q=questions.find(x=>x.id===id);if(!q)return;
   q[key]=val;
@@ -1788,8 +1795,12 @@ async function submitApplication(){
   const answers=form.questions.map((q,i)=>({question:q.label,answer:getPubFieldValue(q,i)}));
   const unanswered=answers.filter((a,i)=>{const q=form.questions[i];return q.type!=='section'&&q.type!=='description'&&!a.answer;});
   if(unanswered.length){alert('Please answer all required questions.');return;}
+  if(!confirm('Are you sure you want to submit your application? You cannot edit it after submission.')){return;}
   const app={id:Date.now(),formId:form.id,formTitle:form.title,applicantName:name,submittedBy:currentUser?currentUser.username:'anonymous',answers,status:'pending',adminNote:'',date:nowStr()};
   db.applications.push(app);
+  // Mark assigned form as filled
+  const af=(db.assignedForms||[]).find(a=>a.formId===pubFormId&&a.username===(currentUser?currentUser.username:'anonymous'));
+  if(af){af.filledAt=nowStr();af.filledBy=currentUser?currentUser.username:'anonymous';}
   logActivity(`New application from "${name}" for "${form.title}"`,'green');
   showLoading(true);await saveDB();showLoading(false);
   document.getElementById('pub-form-area').style.display='none';
@@ -1887,7 +1898,17 @@ function renderUserTickets(){
     </div>`).join('');
 }
 function openNewTicketModal(){
-  document.getElementById('nt-category').value='general';
+  const isAwaiting=currentUser&&currentUser.role==='awaiting';
+  const catSel=document.getElementById('nt-category');
+  // Lock awaiting users to supervisor category only
+  if(isAwaiting){
+    catSel.innerHTML='<option value="supervisor">Supervisor Request</option>';
+    catSel.disabled=true;
+  } else {
+    catSel.innerHTML='<option value="general">General Question</option><option value="ban">Ban Appeal</option><option value="account">Account Issue</option><option value="bug">Bug Report</option><option value="supervisor">Supervisor Request</option><option value="other">Other</option>';
+    catSel.disabled=false;
+  }
+  document.getElementById('nt-category').value=isAwaiting?'supervisor':'general';
   document.getElementById('nt-subject').value='';
   document.getElementById('nt-message').value='';
   openModal('modal-new-ticket');
@@ -2204,6 +2225,7 @@ async function pollDB(){
     if(fresh.mail){
       db.mail=fresh.mail;
       if(currentUser)updateMailBadge();
+      if(currentUser&&currentUser.role==='supervisor')updateSvMailBadge();
     }
   }catch(e){}
 }
@@ -2227,6 +2249,7 @@ function launchSupervisorPortal(){
   const t=()=>svClock.textContent=new Date().toLocaleTimeString('en-GB',{hour12:false});
   t();setInterval(t,1000);
   svNavigate('forms',document.getElementById('sv-nav-forms'));
+  updateSvMailBadge();
   startPolling();
 }
 
@@ -2241,6 +2264,7 @@ function svNavigate(page,el){
   if(page==='results')svRenderResults();
   if(page==='tickets')svRenderTickets();
   if(page==='updates')svRenderUpdates();
+  if(page==='mail')svRenderMail();
 }
 
 function svMyForms(){
@@ -2316,7 +2340,7 @@ function svAddQuestion(label='',type='text'){
   svQuestions.push({id,label,type});
   const el=document.createElement('div');
   el.className='form-builder-field';el.id='sv-qfield-'+id;
-  el.innerHTML=`<div style="color:var(--text-3);font-size:18px;padding-top:20px;">&#10783;</div><div class="fb-field-body"><div class="form-row" style="margin-bottom:0;"><div><label class="form-label" style="font-size:9px;">Question Label</label><input class="form-input" style="font-size:12px;" value="${esc(label)}" placeholder="Enter question…" oninput="svUpdateQ(${id},'label',this.value)"></div><div><label class="form-label" style="font-size:9px;">Field Type</label><select class="form-select" style="font-size:12px;" onchange="svUpdateQ(${id},'type',this.value)"><option value="text" ${type==='text'?'selected':''}>Short Text</option><option value="textarea" ${type==='textarea'?'selected':''}>Long Text</option><option value="number" ${type==='number'?'selected':''}>Number</option><option value="date" ${type==='date'?'selected':''}>Date Picker</option><option value="time" ${type==='time'?'selected':''}>Time Picker</option><option value="datetime" ${type==='datetime'?'selected':''}>Date &amp; Time</option><option value="yesno" ${type==='yesno'?'selected':''}>Yes / No</option><option value="truefalse" ${type==='truefalse'?'selected':''}>True / False</option><option value="radio" ${type==='radio'?'selected':''}>Multiple Choice</option><option value="checkbox" ${type==='checkbox'?'selected':''}>Checkboxes</option><option value="dropdown" ${type==='dropdown'?'selected':''}>Dropdown Menu</option><option value="scale" ${type==='scale'?'selected':''}>Linear Scale</option><option value="stars" ${type==='stars'?'selected':''}>Star Rating</option><option value="section" ${type==='section'?'selected':''}>Section Header</option><option value="description" ${type==='description'?'selected':''}>Description Block</option></select></div></div><div id="sv-qopts-${id}" style="margin-top:8px;"></div></div><button class="btn btn-danger btn-sm" onclick="svRemoveQ(${id})" style="margin-top:8px;">&#x2715;</button>`;
+  el.innerHTML=`<div style="color:var(--text-3);font-size:18px;padding-top:20px;">&#10783;</div><div class="fb-field-body"><div class="form-row" style="margin-bottom:0;"><div><label class="form-label" style="font-size:9px;">Question Label</label><input class="form-input" style="font-size:12px;" value="${esc(label)}" placeholder="Enter question…" maxlength="120" oninput="svUpdateQ(${id},'label',this.value)"></div><div><label class="form-label" style="font-size:9px;">Field Type</label><select class="form-select" style="font-size:12px;" onchange="svUpdateQ(${id},'type',this.value)"><option value="text" ${type==='text'?'selected':''}>Short Text</option><option value="textarea" ${type==='textarea'?'selected':''}>Long Text</option><option value="number" ${type==='number'?'selected':''}>Number</option><option value="date" ${type==='date'?'selected':''}>Date Picker</option><option value="time" ${type==='time'?'selected':''}>Time Picker</option><option value="datetime" ${type==='datetime'?'selected':''}>Date &amp; Time</option><option value="yesno" ${type==='yesno'?'selected':''}>Yes / No</option><option value="truefalse" ${type==='truefalse'?'selected':''}>True / False</option><option value="radio" ${type==='radio'?'selected':''}>Multiple Choice</option><option value="checkbox" ${type==='checkbox'?'selected':''}>Checkboxes</option><option value="dropdown" ${type==='dropdown'?'selected':''}>Dropdown Menu</option><option value="scale" ${type==='scale'?'selected':''}>Linear Scale</option><option value="stars" ${type==='stars'?'selected':''}>Star Rating</option><option value="section" ${type==='section'?'selected':''}>Section Header</option><option value="description" ${type==='description'?'selected':''}>Description Block</option></select></div></div><div id="sv-qopts-${id}" style="margin-top:8px;"></div></div><button class="btn btn-danger btn-sm" onclick="svRemoveQ(${id})" style="margin-top:8px;">&#x2715;</button>`;
   document.getElementById('sv-questions-list').appendChild(el);
 }
 function svUpdateQ(id,key,val){
@@ -2770,6 +2794,50 @@ function getPubFieldValue(q,i){
     default:
       return el.value?el.value.trim():'';
   }
+}
+
+/* ══ SUPERVISOR MAIL ══ */
+function svRenderMail(){
+  const myMail=(db.mail||[]).filter(m=>m.to===currentUser.username).reverse();
+  const el=document.getElementById('sv-mail-list');if(!el)return;
+  let changed=false;
+  myMail.forEach(m=>{if(!m.read){m.read=true;changed=true;}});
+  if(changed)saveDB();
+  updateSvMailBadge();
+  if(!myMail.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#9993;</div><h3>No mail yet</h3><p>Official decisions from the portal owner will appear here.</p></div>';
+    return;
+  }
+  el.innerHTML=myMail.map(m=>`
+    <div class="mail-item ${m.type} ${m.read?'':'unread'}">
+      <span class="mail-badge ${m.type}">${m.type==='approved'?'APPROVED':'DENIED'}</span>
+      <div style="font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:4px;">${esc(m.subject)}</div>
+      <div class="mail-body">${esc(m.body)}</div>
+      <div class="mail-meta">${m.date} &middot; From: NEXUS PORTAL Administration</div>
+    </div>`).join('');
+}
+function updateSvMailBadge(){
+  if(!currentUser)return;
+  const unread=(db.mail||[]).filter(m=>m.to===currentUser.username&&!m.read).length;
+  const badge=document.getElementById('sv-mail-badge');
+  if(badge){badge.style.display=unread?'inline':'none';badge.textContent=unread;}
+}
+
+/* ══ RE-SEND DECISION MAIL ══ */
+function resendDecisionMail(username){
+  const lastMail=[...(db.mail||[])].reverse().find(m=>m.to===username);
+  if(!lastMail){alert('No previous mail found for this user.');return;}
+  _svDecisionUser=username;
+  _svDecisionType=lastMail.type;
+  const u=db.users.find(x=>x.username===username);
+  document.getElementById('sv-decision-title').textContent='Re-send Mail to: '+username;
+  document.getElementById('sv-decision-msg').value=lastMail.body;
+  document.getElementById('sv-decision-error').textContent='';
+  document.getElementById('sv-decision-chosen').textContent=lastMail.type==='approved'?'Approved':'Denied';
+  document.getElementById('sv-decision-chosen').style.color=lastMail.type==='approved'?'var(--green)':'var(--red)';
+  document.getElementById('sv-approve-btn').style.opacity=lastMail.type==='approved'?'1':'0.4';
+  document.getElementById('sv-deny-btn').style.opacity=lastMail.type==='denied'?'1':'0.4';
+  openModal('modal-sv-decision');
 }
 
 /* ══ BOOT ══ */
