@@ -1938,8 +1938,7 @@ function openTranscript(index){
 async function deleteTicket(id){
   if(!confirm('Delete this ticket permanently? This cannot be undone.'))return;
   db.tickets=db.tickets.filter(t=>t.id!==id);
-  // Also remove transcript if exists
-  db.transcripts=(db.transcripts||[]).filter(tr=>tr.ticketId!==id);
+  // Keep transcript — only remove the ticket itself
   logActivity('Ticket #'+id+' deleted by owner','red');
   showLoading(true);await saveDB();showLoading(false);
   updateBadges();updateTranscriptBadge();renderAdminTickets();
