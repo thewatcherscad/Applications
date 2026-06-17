@@ -388,6 +388,27 @@ tr:last-child td{border-bottom:none;}
 .sw-success-title{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:6px;}
 .sw-success-sub{font-size:12px;color:var(--text-2);}
 
+
+/* ══ USER MENU DROPDOWN ══ */
+.user-menu-wrap{position:relative;display:flex;align-items:center;}
+.user-menu-trigger{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 12px;border-radius:8px;border:1px solid var(--border-dim);transition:background 0.15s,border-color 0.15s;user-select:none;}
+.user-menu-trigger:hover{background:var(--bg-hover);border-color:var(--border);}
+.user-menu-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.user-menu-name{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:0.12em;font-weight:600;text-transform:uppercase;}
+.user-menu-chevron{font-size:9px;color:var(--text-3);transition:transform 0.2s;margin-left:2px;}
+.user-menu-wrap.open .user-menu-chevron{transform:rotate(180deg);}
+.user-menu-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:200px;background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:2000;overflow:hidden;display:none;animation:fadeIn 0.15s ease;}
+.user-menu-wrap.open .user-menu-dropdown{display:block;}
+.user-menu-header{padding:14px 16px 10px;border-bottom:1px solid var(--border-dim);}
+.user-menu-header-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text-1);letter-spacing:0.1em;}
+.user-menu-header-role{font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:0.15em;text-transform:uppercase;margin-top:2px;}
+.user-menu-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:background 0.12s,color 0.12s;}
+.user-menu-item:hover{background:var(--bg-hover);color:var(--text-1);}
+.user-menu-item.danger{color:var(--red);}
+.user-menu-item.danger:hover{background:rgba(248,113,113,0.08);color:var(--red);}
+.user-menu-item-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.user-menu-divider{height:1px;background:var(--border-dim);margin:4px 0;}
+
 </style>
 </head>
 <body>
@@ -477,8 +498,23 @@ tr:last-child td{border-bottom:none;}
     <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);letter-spacing:0.2em;margin-left:4px;">v3.1</div>
     <div class="topbar-right">
       <div class="topbar-clock" id="clock"></div>
-      <div class="topbar-user" id="topbar-username">⬡ ADMIN</div>
-      <button class="topbar-logout" onclick="logout()">LOGOUT</button>
+      <div class="user-menu-wrap" id="admin-user-menu">
+        <div class="user-menu-trigger" onclick="toggleUserMenu('admin-user-menu')">
+          <div class="user-menu-avatar" id="admin-user-avatar">A</div>
+          <div class="user-menu-name" id="topbar-username">ADMIN</div>
+          <div class="user-menu-chevron">&#9660;</div>
+        </div>
+        <div class="user-menu-dropdown">
+          <div class="user-menu-header">
+            <div class="user-menu-header-name" id="admin-menu-name">Admin</div>
+            <div class="user-menu-header-role" id="admin-menu-role">owner</div>
+          </div>
+          <div class="user-menu-item" onclick="closeUserMenus();navigate('users',document.getElementById('nav-users'))"><span class="user-menu-item-icon">&#9711;</span>User Accounts</div>
+          <div class="user-menu-item" onclick="closeUserMenus();navigate('activity',document.getElementById('nav-activity'))"><span class="user-menu-item-icon">&#9672;</span>Activity Log</div>
+          <div class="user-menu-divider"></div>
+          <div class="user-menu-item danger" onclick="closeUserMenus();logout()"><span class="user-menu-item-icon">&#10148;</span>Sign Out</div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="main-layout">
@@ -720,8 +756,23 @@ tr:last-child td{border-bottom:none;}
       <div class="ap-nav-item" id="ap-nav-mail" onclick="apNavigate('mail',this)" style="display:none;">Mail<span id="ap-mail-badge" style="background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;display:none;">1</span></div>
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:16px;">
-      <div class="topbar-user" id="ap-username"></div>
-      <button class="topbar-logout" onclick="logout()">LOGOUT</button>
+      <div class="user-menu-wrap" id="ap-user-menu">
+        <div class="user-menu-trigger" onclick="toggleUserMenu('ap-user-menu')">
+          <div class="user-menu-avatar" id="ap-user-avatar">U</div>
+          <div class="user-menu-name" id="ap-username"></div>
+          <div class="user-menu-chevron">&#9660;</div>
+        </div>
+        <div class="user-menu-dropdown">
+          <div class="user-menu-header">
+            <div class="user-menu-header-name" id="ap-menu-name">User</div>
+            <div class="user-menu-header-role" id="ap-menu-role">applicant</div>
+          </div>
+          <div class="user-menu-item" onclick="closeUserMenus();apNavigate('applications',document.querySelectorAll('.ap-nav-item')[0])"><span class="user-menu-item-icon">&#9671;</span>My Applications</div>
+          <div class="user-menu-item" onclick="closeUserMenus();apNavigate('support',document.querySelectorAll('.ap-nav-item')[2])"><span class="user-menu-item-icon">&#128172;</span>Support</div>
+          <div class="user-menu-divider"></div>
+          <div class="user-menu-item danger" onclick="closeUserMenus();logout()"><span class="user-menu-item-icon">&#10148;</span>Sign Out</div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="ap-content">
@@ -776,8 +827,23 @@ tr:last-child td{border-bottom:none;}
     <div style="font-family:var(--mono);font-size:11px;color:var(--yellow);letter-spacing:0.15em;margin-left:8px;">⬡ SUPERVISOR</div>
     <div class="topbar-right">
       <div class="topbar-clock" id="sv-clock"></div>
-      <div class="topbar-user" id="sv-username"></div>
-      <button class="topbar-logout" onclick="logout()">LOGOUT</button>
+      <div class="user-menu-wrap" id="sv-user-menu">
+        <div class="user-menu-trigger" onclick="toggleUserMenu('sv-user-menu')">
+          <div class="user-menu-avatar" id="sv-user-avatar">S</div>
+          <div class="user-menu-name" id="sv-username"></div>
+          <div class="user-menu-chevron">&#9660;</div>
+        </div>
+        <div class="user-menu-dropdown">
+          <div class="user-menu-header">
+            <div class="user-menu-header-name" id="sv-menu-name">Supervisor</div>
+            <div class="user-menu-header-role">Supervisor</div>
+          </div>
+          <div class="user-menu-item" onclick="closeUserMenus();svNavigate('tickets',document.getElementById('sv-nav-tickets'))"><span class="user-menu-item-icon">&#128172;</span>My Tickets</div>
+          <div class="user-menu-item" onclick="closeUserMenus();svNavigate('mail',document.getElementById('sv-nav-mail'))"><span class="user-menu-item-icon">&#9993;</span>Mail</div>
+          <div class="user-menu-divider"></div>
+          <div class="user-menu-item danger" onclick="closeUserMenus();logout()"><span class="user-menu-item-icon">&#10148;</span>Sign Out</div>
+        </div>
+      </div>
     </div>
   </div>
   <div class="main-layout">
@@ -1288,7 +1354,7 @@ function openClosedTicket(){
   currentUser={username:user.username,role:'user',suspended:true};
   document.getElementById('closed-screen').classList.remove('visible');
   // Show applicant portal but lock to support tab only
-  document.getElementById('ap-username').textContent='⬡ '+user.username.toUpperCase();
+  document.getElementById('ap-username').textContent=user.username.toUpperCase();
   document.getElementById('ap-welcome').textContent='Account Suspended';
   document.getElementById('applicant-portal').classList.add('active');
   // Hide My Applications and My Forms tabs for suspended users
@@ -1323,14 +1389,16 @@ function applyRoleRestrictions(){
   // Users page — hide create account button, close/reopen/delete/edit for admin
 }
 function launchAdmin(){
-  document.getElementById('topbar-username').textContent='⬡ '+currentUser.username.toUpperCase();
+  document.getElementById('topbar-username').textContent=currentUser.username.toUpperCase();
+  setUserMenuInfo();
   document.getElementById('app').classList.add('active');
   startClock();refreshAll();applyRoleRestrictions();startPolling();
 }
 function launchApplicantPortal(){
   if(checkMaintenance())return;
   showSupportWidget();
-  document.getElementById('ap-username').textContent='⬡ '+currentUser.username.toUpperCase();
+  document.getElementById('ap-username').textContent=currentUser.username.toUpperCase();
+  setUserMenuInfo();
   document.getElementById('ap-welcome').textContent='Welcome, '+currentUser.username;
   document.getElementById('applicant-portal').classList.add('active');
   renderApplicantApps();
@@ -2322,7 +2390,8 @@ let svQuestions=[],svQuestionCount=0;
 function launchSupervisorPortal(){
   if(checkMaintenance())return;
   showSupportWidget();
-  document.getElementById('sv-username').textContent='⬡ '+currentUser.username.toUpperCase();
+  document.getElementById('sv-username').textContent=currentUser.username.toUpperCase();
+  setUserMenuInfo();
   const svPortal=document.getElementById('supervisor-portal');
   svPortal.style.display='flex';
   const svClock=document.getElementById('sv-clock');
@@ -2548,7 +2617,8 @@ function launchAwaitingPortal(ticketId){
   showSupportWidget();
   // Show a simple waiting screen with the live ticket
   document.getElementById('applicant-portal').classList.add('active');
-  document.getElementById('ap-username').textContent='⬡ '+currentUser.username.toUpperCase();
+  document.getElementById('ap-username').textContent=currentUser.username.toUpperCase();
+  setUserMenuInfo();
   document.getElementById('ap-welcome').textContent='Request Submitted!';
   document.getElementById('ap-sub').textContent='Your supervisor request is under review. Chat below while you wait.';
   // Lock all nav tabs except support
@@ -3093,6 +3163,48 @@ function showSupportWidget(){
 function hideSupportWidget(){
   const w=document.getElementById('support-widget');
   if(w)w.style.display='none';
+}
+
+
+/* ══ USER MENU ══ */
+function toggleUserMenu(id){
+  const wrap=document.getElementById(id);
+  if(!wrap)return;
+  const wasOpen=wrap.classList.contains('open');
+  closeUserMenus();
+  if(!wasOpen)wrap.classList.add('open');
+}
+function closeUserMenus(){
+  document.querySelectorAll('.user-menu-wrap.open').forEach(w=>w.classList.remove('open'));
+}
+document.addEventListener('click',function(e){
+  if(!e.target.closest('.user-menu-wrap'))closeUserMenus();
+});
+
+function setUserMenuInfo(){
+  if(!currentUser)return;
+  const initial=(currentUser.username||'U')[0].toUpperCase();
+  const name=currentUser.username.toUpperCase();
+  const role=currentUser.role;
+  // Admin
+  const av=document.getElementById('admin-user-avatar');
+  const mn=document.getElementById('admin-menu-name');
+  const mr=document.getElementById('admin-menu-role');
+  if(av)av.textContent=initial;
+  if(mn)mn.textContent=currentUser.username;
+  if(mr)mr.textContent=role;
+  // Supervisor
+  const sav=document.getElementById('sv-user-avatar');
+  const smn=document.getElementById('sv-menu-name');
+  if(sav)sav.textContent=initial;
+  if(smn)smn.textContent=currentUser.username;
+  // Applicant
+  const aav=document.getElementById('ap-user-avatar');
+  const amn=document.getElementById('ap-menu-name');
+  const amr=document.getElementById('ap-menu-role');
+  if(aav)aav.textContent=initial;
+  if(amn)amn.textContent=currentUser.username;
+  if(amr)amr.textContent=role;
 }
 
 </script>
