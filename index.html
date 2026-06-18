@@ -1890,16 +1890,10 @@ async function doLogin(){
   const p=document.getElementById('li-pass').value.trim();
   if(!u||!p){setAuthErr('li','Username and password required.');return;}
   showLoading(true);await loadDB();showLoading(false);
-  const user=db.users.find(x=>x.username===u&&x.password===p);
-  if(!user){
-    setAuthErr('li','Invalid username or password.');
-    // Log failed attempt
-    logSecurityEvent('fail', u, 'Failed login attempt — username: '+u);
-    await saveDB();
-    return;
-  }
-  // Check temp lockout
-  if(db.lockouts&&db.lockouts[u]){
+
+  // Check temp lockout FIRST (after fresh DB load)
+  if(!db.lockouts)db.lockouts={};
+  if(db.lockouts[u]){
     const lo=db.lockouts[u];
     if(Date.now()<lo.until){
       const mins=Math.ceil((lo.until-Date.now())/60000);
@@ -1910,6 +1904,26 @@ async function doLogin(){
     } else {
       delete db.lockouts[u];
     }
+  }
+
+  const user=db.users.find(x=>x.username===u&&x.password===p);
+  if(!user){
+    setAuthErr('li','Invalid username or password.');
+    // Log failed attempt
+    if(!db.securityLog)db.securityLog=[];
+    db.securityLog.unshift({type:'fail',username:u,text:'Failed login attempt — username: '+u,time:nowStr(),ts:Date.now()});
+    if(db.securityLog.length>300)db.securityLog.pop();
+    // Brute force check — 5+ fails in 10 min = auto lockout
+    const tenMinsAgo=Date.now()-600000;
+    const recentFails=db.securityLog.filter(e=>e.type==='fail'&&e.username===u&&e.ts>tenMinsAgo);
+    if(recentFails.length>=5&&!db.lockouts[u]){
+      db.lockouts[u]={until:Date.now()+30*60*1000,reason:'Brute force detected ('+recentFails.length+' failed attempts in 10 min)',ts:Date.now()};
+      db.securityLog.unshift({type:'brute',username:u,text:'AUTO-LOCKOUT: Brute force on "'+u+'" — locked 30 min',time:nowStr(),ts:Date.now()});
+      logActivity('SECURITY: Brute force on "'+u+'" — auto-locked 30 min','red','SYSTEM');
+      setAuthErr('li','Too many failed attempts. Account locked for 30 minutes.');
+    }
+    await saveDB();
+    return;
   }
   // Check if account is closed
   if(user.status==='closed'){
