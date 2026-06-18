@@ -874,7 +874,7 @@ tr:last-child td{border-bottom:none;}
     <div class="ap-nav">
       <div class="ap-nav-item active" onclick="apNavigate('applications',this)">My Applications</div>
       <div class="ap-nav-item" onclick="apNavigate('forms',this)">My Forms</div>
-      <div class="ap-nav-item" onclick="apNavigate('support',this)">Support<span id="ap-support-badge" style="background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;display:none;">0</span></div>
+
       <div class="ap-nav-item" onclick="apNavigate('changelog',this)">Updates</div>
       <div class="ap-nav-item" id="ap-nav-mail" onclick="apNavigate('mail',this)" style="display:none;">Mail<span id="ap-mail-badge" style="background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-left:6px;display:none;">1</span></div>
     </div>
@@ -927,17 +927,13 @@ tr:last-child td{border-bottom:none;}
     <div class="ap-page" id="ap-page-mail">
       <div style="margin-bottom:24px;">
         <div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text-1);margin-bottom:4px;">Mail</div>
-        <div style="font-size:13px;color:var(--text-2);">Official messages from the portal owner regarding your supervisor request.</div>
+        <div style="font-size:13px;color:var(--text-2);">Official messages from the portal — supervisor decisions and closed ticket receipts.</div>
       </div>
       <div id="ap-mail-list"></div>
     </div>
 
-    <!-- Support / Tickets -->
-    <div class="ap-page" id="ap-page-support">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-        <div><div style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text-1);margin-bottom:4px;">Support</div><div style="font-size:13px;color:var(--text-2);">Submit a ticket and an admin will respond. Your ticket ID is kept private.</div></div>
-        <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
-      </div>
+    <!-- Support / Tickets (hidden - use support widget) -->
+    <div class="ap-page" id="ap-page-support" style="display:none!important;">
       <div id="user-tickets-list"></div>
     </div>
   </div>
@@ -977,9 +973,9 @@ tr:last-child td{border-bottom:none;}
       <div class="nav-item" id="sv-nav-results" onclick="svNavigate('results',this)"><span class="nav-icon">◧</span>Results<span class="nav-badge yellow" id="sv-badge-results">0</span></div>
       <div class="nav-item" id="sv-nav-updates" onclick="svNavigate('updates',this)"><span class="nav-icon">📢</span>Updates</div>
       <div class="sidebar-divider"></div>
-      <div class="nav-section-label">Support</div>
+      <div class="nav-section-label">Mail</div>
       <div class="nav-item" id="sv-nav-mail" onclick="svNavigate('mail',this)"><span class="nav-icon">✉</span>Mail<span id="sv-mail-badge" style="margin-left:auto;background:var(--red);color:#fff;font-family:var(--mono);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;display:none;">0</span></div>
-      <div class="nav-item" id="sv-nav-tickets" onclick="svNavigate('tickets',this)"><span class="nav-icon">💬</span>My Tickets</div>
+
     </div>
     <div class="content">
       <!-- SV FORMS -->
@@ -1022,12 +1018,8 @@ tr:last-child td{border-bottom:none;}
         <div class="page-header"><div class="page-header-eyebrow">Supervisor</div><h1>Mail</h1><p>Official messages from the portal owner.</p></div>
         <div id="sv-mail-list"></div>
       </div>
-      <!-- SV TICKETS -->
-      <div class="page-section fade-in" id="sv-page-tickets">
-        <div class="page-header"><div class="page-header-eyebrow">Support</div><h1>My Tickets</h1><p>Contact the portal owner for help.</p></div>
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
-          <button class="btn btn-primary" onclick="openNewTicketModal()">+ New Ticket</button>
-        </div>
+      <!-- SV TICKETS (hidden - use support widget) -->
+      <div class="page-section fade-in" id="sv-page-tickets" style="display:none!important;">
         <div id="sv-tickets-list"></div>
       </div>
     </div>
@@ -2182,6 +2174,17 @@ async function closeTicketAsAdmin(){
       messages:t.messages||[],rating:null
     });
     t.awaitingRating=true;
+    // Send ticket closed mail to the user
+    const msgCount=(t.messages||[]).length;
+    db.mail.push({
+      id:'M'+Date.now(),
+      to:t.username,
+      type:'ticket_closed',
+      subject:'Support Ticket Closed — '+t.subject,
+      body:'Your support ticket has been closed by the support team.\n\nTicket ID: '+t.id+'\nSubject: '+t.subject+'\nCategory: '+(CAT_LABELS[t.category]||t.category)+'\nOpened: '+t.date+'\nClosed: '+nowStr()+'\nMessages: '+msgCount+'\n\nYou can view the full transcript in your Mail tab. If you need further assistance, please open a new ticket via the support widget.',
+      date:nowStr(),
+      read:false
+    });
   }
   logActivity('Ticket #'+t.id+' '+(wasOpen?'closed':'reopened'),'yellow');
   showLoading(true);await saveDB();showLoading(false);updateBadges();renderAdminTickets();updateTranscriptBadge();
@@ -3220,13 +3223,18 @@ function renderUserMail(){
     el.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#9993;</div><h3>No mail yet</h3><p>Official decisions will appear here.</p></div>';
     return;
   }
-  el.innerHTML=myMail.map(m=>`
-    <div class="mail-item ${m.type} ${m.read?'':'unread'}">
-      <span class="mail-badge ${m.type}">${m.type==='approved'?'APPROVED':'DENIED'}</span>
+  el.innerHTML=myMail.map(m=>{
+    const isTicket=m.type==='ticket_closed';
+    const badgeClass=isTicket?'ticket_closed':m.type;
+    const badgeLabel=isTicket?'TICKET CLOSED':m.type==='approved'?'APPROVED':'DENIED';
+    const borderClass=isTicket?'':m.type;
+    return `<div class="mail-item ${borderClass} ${m.read?'':'unread'}" style="${isTicket?'border-left:3px solid var(--yellow);':''}">
+      <span class="mail-badge" style="${isTicket?'background:rgba(251,191,36,0.12);color:var(--yellow);':''}" ${!isTicket?`class="mail-badge ${m.type}"`:''}>` + badgeLabel + `</span>
       <div style="font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:4px;">${esc(m.subject)}</div>
       <div class="mail-body">${esc(m.body)}</div>
-      <div class="mail-meta">${m.date} &middot; From: NEXUS PORTAL Administration</div>
-    </div>`).join('');
+      <div class="mail-meta">${m.date} &middot; From: NEXUS PORTAL Support</div>
+    </div>`;
+  }).join('');
 }
 
 function updateSupportBadge(){
@@ -3364,13 +3372,17 @@ function svRenderMail(){
     el.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#9993;</div><h3>No mail yet</h3><p>Official decisions from the portal owner will appear here.</p></div>';
     return;
   }
-  el.innerHTML=myMail.map(m=>`
-    <div class="mail-item ${m.type} ${m.read?'':'unread'}">
-      <span class="mail-badge ${m.type}">${m.type==='approved'?'APPROVED':'DENIED'}</span>
+  el.innerHTML=myMail.map(m=>{
+    const isTicket=m.type==='ticket_closed';
+    const badgeLabel=isTicket?'TICKET CLOSED':m.type==='approved'?'APPROVED':'DENIED';
+    const borderClass=isTicket?'':m.type;
+    return `<div class="mail-item ${borderClass} ${m.read?'':'unread'}" style="${isTicket?'border-left:3px solid var(--yellow);':''}">
+      <span class="mail-badge" style="${isTicket?'background:rgba(251,191,36,0.12);color:var(--yellow);':''}">`+badgeLabel+`</span>
       <div style="font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:4px;">${esc(m.subject)}</div>
       <div class="mail-body">${esc(m.body)}</div>
-      <div class="mail-meta">${m.date} &middot; From: NEXUS PORTAL Administration</div>
-    </div>`).join('');
+      <div class="mail-meta">${m.date} &middot; From: NEXUS PORTAL Support</div>
+    </div>`;
+  }).join('');
 }
 function updateSvMailBadge(){
   if(!currentUser)return;
@@ -3505,15 +3517,9 @@ function swRenderTickets(){
 }
 
 function swOpenTicket(id){
-  // Close widget, navigate to support tab, open ticket
+  // Close widget and open ticket modal directly
   toggleSupportWidget();
-  if(currentUser.role==='supervisor'){
-    svNavigate('tickets',document.getElementById('sv-nav-tickets'));
-    setTimeout(()=>openUserTicket(id),200);
-  } else {
-    apNavigate('support',document.querySelectorAll('.ap-nav-item')[2]);
-    setTimeout(()=>openUserTicket(id),200);
-  }
+  setTimeout(()=>openUserTicket(id),200);
 }
 
 async function swSubmitTicket(){
