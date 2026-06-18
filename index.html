@@ -3103,6 +3103,9 @@ async function postChangelog(){
   if(!db.changelog)db.changelog=[];
   db.changelog.unshift({title,body,tag,date:nowStr()});
   logActivity('Changelog post: "'+title+'"','accent');
+  // Always sync webhook field into db before posting, so it works even if "Save Webhook" wasn't clicked separately
+  const webhookEl=document.getElementById('cl-webhook');
+  if(webhookEl&&webhookEl.value.trim())db.changelogWebhookUrl=webhookEl.value.trim();
   showLoading(true);await saveDB();showLoading(false);
   document.getElementById('cl-new-title').value='';
   document.getElementById('cl-new-body').value='';
@@ -3119,8 +3122,10 @@ async function saveChangelogWebhook(){
 }
 
 function sendChangelogWebhook(title,body,tag){
-  const webhookUrl=(db.changelogWebhookUrl||'').trim();
-  if(!webhookUrl)return; // no webhook configured, skip silently
+  const webhookEl=document.getElementById('cl-webhook');
+  const webhookUrl=(db.changelogWebhookUrl||(webhookEl?webhookEl.value:'')||'').trim();
+  if(!webhookUrl){console.warn('Changelog webhook: no URL configured, skipping send.');return;}
+  console.log('Changelog webhook: sending to',webhookUrl);
 
   const tagLabels={update:'🔄 Update',new:'✨ New Feature',fix:'🔧 Bug Fix',notice:'📢 Notice'};
   const tagColors={update:5793266,new:3066993,fix:15844367,notice:15158332};
@@ -3140,7 +3145,17 @@ function sendChangelogWebhook(title,body,tag){
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({embeds:[embed]})
-  }).catch(e=>console.warn('Changelog webhook failed (non-critical):',e));
+  }).then(r=>{
+    if(!r.ok){
+      console.error('Changelog webhook returned error status:',r.status);
+      showToast('Discord webhook failed (status '+r.status+')','error');
+    } else {
+      console.log('Changelog webhook sent successfully');
+    }
+  }).catch(e=>{
+    console.warn('Changelog webhook failed (non-critical):',e);
+    showToast('Discord webhook failed to send','error');
+  });
 }
 
 async function deleteChangelog(index){
