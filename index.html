@@ -1548,6 +1548,7 @@ tr:last-child td{border-bottom:none;}
       <div class="nav-item" id="sv-nav-create" onclick="svNavigate('create',this)"><span class="nav-icon">✦</span>Create Form</div>
       <div class="nav-item" id="sv-nav-results" onclick="svNavigate('results',this)"><span class="nav-icon">◧</span>Results<span class="nav-badge yellow" id="sv-badge-results">0</span></div>
       <div class="nav-item" id="sv-nav-updates" onclick="svNavigate('updates',this)"><span class="nav-icon">📢</span>Updates</div>
+      <div class="nav-item" id="sv-nav-announcements" onclick="svNavigate('announcements',this)" style="display:none;"><span class="nav-icon">📣</span>Announcements<span class="nav-badge yellow">VIP</span></div>
       <div class="sidebar-divider"></div>
       <div class="nav-section-label">Mail</div>
       <div class="nav-item" id="sv-nav-feedback" onclick="svNavigate('feedback',this)"><span class="nav-icon">💡</span>Feedback</div>
@@ -1589,6 +1590,59 @@ tr:last-child td{border-bottom:none;}
       <div class="page-section fade-in" id="sv-page-updates">
         <div class="page-header"><div class="page-header-eyebrow">Supervisor</div><h1>Updates</h1><p>Latest announcements from the portal owner.</p></div>
         <div id="sv-cl-list"></div>
+      </div>
+      <!-- SV ANNOUNCEMENTS (VIP only) -->
+      <div class="page-section fade-in" id="sv-page-announcements">
+        <div class="page-header">
+          <div class="page-header-eyebrow">Supervisor &middot; ⭐ VIP</div>
+          <h1>Announcements</h1>
+          <p>Send custom announcements to your own Discord channel via saved webhooks.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Saved Webhooks</div></div>
+          <div id="sv-ann-webhook-list" class="ann-webhook-list">
+            <div class="empty-state" style="padding:20px 0;"><div class="empty-state-icon" style="font-size:24px;">🔗</div><p>No webhooks saved yet</p></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Webhook Name</label><input class="form-input" id="sv-ann-new-name" placeholder="e.g. My Server Announcements"></div>
+            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Webhook URL</label><input class="form-input" id="sv-ann-new-url" placeholder="https://discord.com/api/webhooks/..." style="font-family:var(--mono);font-size:12px;"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+            <button class="btn btn-primary btn-sm" onclick="addSvAnnouncementWebhook()">+ Add Webhook</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Compose Announcement</div></div>
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" id="sv-ann-title" placeholder="e.g. Server Update Tonight" oninput="updateSvAnnouncementPreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-textarea" id="sv-ann-message" placeholder="Write your announcement..." style="min-height:120px;" oninput="updateSvAnnouncementPreview()"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Image / Thumbnail URL <span style="font-weight:400;color:var(--text-3);font-size:11px;">(optional)</span></label>
+            <input class="form-input" id="sv-ann-image" placeholder="https://example.com/image.png" style="font-family:var(--mono);font-size:12px;" oninput="updateSvAnnouncementPreview()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Embed Color</label>
+            <div class="ann-color-grid" id="sv-ann-color-grid"></div>
+          </div>
+          <div class="divider"></div>
+          <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.2em;color:var(--text-3);text-transform:uppercase;margin-bottom:10px;">Preview</div>
+          <div class="ann-preview" id="sv-ann-preview-box">
+            <div class="ann-preview-title" id="sv-ann-preview-title">Your title here</div>
+            <div class="ann-preview-desc" id="sv-ann-preview-desc">Your message will appear here...</div>
+            <img id="sv-ann-preview-img" class="ann-preview-img" style="display:none;">
+            <div class="ann-preview-footer">NEXUS PORTAL · Supervisor Announcement</div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+            <button class="btn btn-primary" onclick="sendSvAnnouncement()">📢 Send Announcement</button>
+          </div>
+        </div>
       </div>
       <!-- SV MAIL -->
       <div class="page-section fade-in" id="sv-page-mail">
@@ -2133,6 +2187,7 @@ async function loadDB(){
     if(!db.lockouts)db.lockouts={};
     if(db.changelogWebhookUrl===undefined)db.changelogWebhookUrl='';
     if(!db.announceWebhooks)db.announceWebhooks=[];
+    if(!db.svAnnounceWebhooks)db.svAnnounceWebhooks={};
     // Auto-delete denied accounts past their scheduled time
     const now=Date.now();
     const toDelete=db.users.filter(u=>u.deleteAt&&now>=u.deleteAt);
@@ -3729,6 +3784,8 @@ function launchSupervisorPortal(){
   if(svBadge)svBadge.innerHTML=isVipSupervisor()?'&#11088; VIP SUPERVISOR':'&#11041; SUPERVISOR';
   const svRoleLabel=document.getElementById('sv-menu-role-label');
   if(svRoleLabel)svRoleLabel.textContent=isVipSupervisor()?'VIP Supervisor':'Supervisor';
+  const svAnnNav=document.getElementById('sv-nav-announcements');
+  if(svAnnNav)svAnnNav.style.display=isVipSupervisor()?'':'none';
   const svPortal=document.getElementById('supervisor-portal');
   svPortal.style.display='flex';
   const svClock=document.getElementById('sv-clock');
@@ -3750,6 +3807,7 @@ function svNavigate(page,el){
   if(page==='results')svRenderResults();
   if(page==='tickets')svRenderTickets();
   if(page==='updates')svRenderUpdates();
+  if(page==='announcements')renderSvAnnouncementsPage();
   if(page==='mail')svRenderMail();
   if(page==='feedback')renderUserFeedback('sv-feedback-list');
 }
@@ -5159,6 +5217,167 @@ async function sendAnnouncement(){
   }catch(e){
     showLoading(false);
     console.warn('Announcement webhook failed:',e);
+    showToast('Failed to send announcement','error');
+  }
+}
+
+/* ══ SUPERVISOR ANNOUNCEMENTS (VIP only) ══ */
+// Each supervisor's webhooks are stored separately, keyed by username,
+// so VIP supervisors only ever see and use their own saved webhooks.
+let _svAnnSelectedColor=5793266;
+let _svAnnSelectedWebhookId=null;
+
+function getSvAnnounceWebhooks(){
+  if(!db.svAnnounceWebhooks)db.svAnnounceWebhooks={};
+  if(!currentUser)return [];
+  if(!db.svAnnounceWebhooks[currentUser.username])db.svAnnounceWebhooks[currentUser.username]=[];
+  return db.svAnnounceWebhooks[currentUser.username];
+}
+
+function renderSvAnnouncementsPage(){
+  if(!isVipSupervisor()){
+    showToast('Announcements are a VIP Supervisor feature','error');
+    svNavigate('forms',document.getElementById('sv-nav-forms'));
+    return;
+  }
+  renderSvAnnWebhookList();
+  renderSvAnnColorGrid();
+  updateSvAnnouncementPreview();
+}
+
+function renderSvAnnWebhookList(){
+  const list=getSvAnnounceWebhooks();
+  const el=document.getElementById('sv-ann-webhook-list');
+  if(!el)return;
+  if(!list.length){
+    el.innerHTML='<div class="empty-state" style="padding:20px 0;"><div class="empty-state-icon" style="font-size:24px;">&#128279;</div><p>No webhooks saved yet</p></div>';
+    _svAnnSelectedWebhookId=null;
+    return;
+  }
+  if(!_svAnnSelectedWebhookId||!list.find(w=>w.id===_svAnnSelectedWebhookId)){
+    _svAnnSelectedWebhookId=list[0].id;
+  }
+  el.innerHTML=list.map(w=>`
+    <div class="ann-webhook-item ${w.id===_svAnnSelectedWebhookId?'selected':''}">
+      <input type="radio" class="ann-webhook-radio" name="sv-ann-webhook-radio" ${w.id===_svAnnSelectedWebhookId?'checked':''} onclick="selectSvAnnWebhook('${w.id}')">
+      <div style="flex:1;min-width:0;">
+        <div class="ann-webhook-name">${esc(w.name)}</div>
+        <div class="ann-webhook-url">${esc(w.url)}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="deleteSvAnnouncementWebhook('${w.id}')">Delete</button>
+    </div>`).join('');
+}
+
+function selectSvAnnWebhook(id){
+  _svAnnSelectedWebhookId=id;
+  renderSvAnnWebhookList();
+}
+
+async function addSvAnnouncementWebhook(){
+  if(!isVipSupervisor()){showToast('VIP Supervisor only','error');return;}
+  const nameEl=document.getElementById('sv-ann-new-name');
+  const urlEl=document.getElementById('sv-ann-new-url');
+  const name=nameEl.value.trim();
+  const url=urlEl.value.trim();
+  if(!name||!url){showToast('Please fill in both name and URL','error');return;}
+  const list=getSvAnnounceWebhooks();
+  list.push({id:'svwh'+Date.now(),name,url});
+  _svAnnSelectedWebhookId=list[list.length-1].id;
+  showLoading(true);await saveDB();showLoading(false);
+  nameEl.value='';urlEl.value='';
+  renderSvAnnWebhookList();
+  showToast('Webhook saved: '+name,'success');
+}
+
+async function deleteSvAnnouncementWebhook(id){
+  if(!confirm('Delete this webhook?'))return;
+  if(!db.svAnnounceWebhooks||!currentUser)return;
+  db.svAnnounceWebhooks[currentUser.username]=(db.svAnnounceWebhooks[currentUser.username]||[]).filter(w=>w.id!==id);
+  showLoading(true);await saveDB();showLoading(false);
+  renderSvAnnWebhookList();
+  showToast('Webhook deleted','success');
+}
+
+function renderSvAnnColorGrid(){
+  const el=document.getElementById('sv-ann-color-grid');
+  if(!el)return;
+  el.innerHTML=ANN_COLORS.map(c=>`
+    <div class="ann-color-swatch ${c.hex===_svAnnSelectedColor?'selected':''}" style="background:${ANN_COLOR_CSS[c.hex]};" title="${c.name}" onclick="selectSvAnnColor(${c.hex})"></div>
+  `).join('');
+}
+
+function selectSvAnnColor(hex){
+  _svAnnSelectedColor=hex;
+  renderSvAnnColorGrid();
+  updateSvAnnouncementPreview();
+}
+
+function updateSvAnnouncementPreview(){
+  const titleEl=document.getElementById('sv-ann-title');
+  const msgEl=document.getElementById('sv-ann-message');
+  const imgEl=document.getElementById('sv-ann-image');
+  if(!titleEl)return;
+  const title=titleEl.value.trim()||'Your title here';
+  const msg=msgEl.value.trim()||'Your message will appear here...';
+  const imgUrl=imgEl.value.trim();
+
+  document.getElementById('sv-ann-preview-title').textContent=title;
+  document.getElementById('sv-ann-preview-desc').textContent=msg;
+  const previewImg=document.getElementById('sv-ann-preview-img');
+  if(imgUrl){
+    previewImg.src=imgUrl;
+    previewImg.style.display='block';
+  } else {
+    previewImg.style.display='none';
+  }
+  const box=document.getElementById('sv-ann-preview-box');
+  if(box)box.style.borderLeftColor=ANN_COLOR_CSS[_svAnnSelectedColor]||'var(--accent)';
+}
+
+async function sendSvAnnouncement(){
+  if(!isVipSupervisor()){showToast('VIP Supervisor only','error');return;}
+  const list=getSvAnnounceWebhooks();
+  if(!list.length){showToast('Please add a webhook first','error');return;}
+  if(!_svAnnSelectedWebhookId){showToast('Please select a webhook','error');return;}
+  const webhook=list.find(w=>w.id===_svAnnSelectedWebhookId);
+  if(!webhook){showToast('Selected webhook not found','error');return;}
+
+  const title=document.getElementById('sv-ann-title').value.trim();
+  const message=document.getElementById('sv-ann-message').value.trim();
+  const imgUrl=document.getElementById('sv-ann-image').value.trim();
+
+  if(!title||!message){showToast('Please fill in title and message','error');return;}
+
+  const embed={
+    title:title,
+    description:message,
+    color:_svAnnSelectedColor,
+    footer:{text:'NEXUS PORTAL — Supervisor Announcement ('+currentUser.username+')'},
+    timestamp:new Date().toISOString()
+  };
+  if(imgUrl)embed.image={url:imgUrl};
+
+  showLoading(true);
+  try{
+    const r=await fetch(webhook.url,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({embeds:[embed]})
+    });
+    showLoading(false);
+    if(!r.ok){
+      showToast('Discord webhook failed (status '+r.status+')','error');
+      return;
+    }
+    logActivity('Supervisor announcement sent to "'+webhook.name+'": "'+title+'"','accent');
+    showToast('Announcement sent to '+webhook.name+'!','success');
+    document.getElementById('sv-ann-title').value='';
+    document.getElementById('sv-ann-message').value='';
+    document.getElementById('sv-ann-image').value='';
+    updateSvAnnouncementPreview();
+  }catch(e){
+    showLoading(false);
+    console.warn('Supervisor announcement webhook failed:',e);
     showToast('Failed to send announcement','error');
   }
 }
