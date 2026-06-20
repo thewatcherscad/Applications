@@ -896,6 +896,28 @@ tr:last-child td{border-bottom:none;}
 .ann-preview-footer{font-size:11px;color:#949ba4;margin-top:10px;}
 
 
+/* ══ FORM STATS ══ */
+.fs-card{background:var(--bg-panel);border:1px solid var(--border-dim);border-radius:14px;padding:22px 24px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,0.05);}
+.fs-card-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.fs-card-title{font-size:15px;font-weight:700;color:var(--text-1);}
+.fs-card-meta{font-family:var(--mono);font-size:11px;color:var(--text-3);margin-top:3px;}
+.fs-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;}
+.fs-stat{background:var(--bg-deep);border:1px solid var(--border-dim);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden;}
+.fs-stat::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);}
+.fs-stat.green::before{background:var(--green);}
+.fs-stat.red::before{background:var(--red);}
+.fs-stat.yellow::before{background:var(--yellow);}
+.fs-stat-label{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:0.15em;color:var(--text-3);text-transform:uppercase;margin-bottom:6px;}
+.fs-stat-val{font-family:var(--sans);font-size:22px;font-weight:800;color:var(--text-1);}
+.fs-bar-wrap{margin-top:16px;}
+.fs-bar{height:8px;border-radius:6px;background:var(--bg-deep);overflow:hidden;display:flex;}
+.fs-bar-accepted{background:var(--green);height:100%;}
+.fs-bar-rejected{background:var(--red);height:100%;}
+.fs-bar-pending{background:var(--yellow);height:100%;}
+.fs-bar-legend{display:flex;gap:16px;margin-top:8px;font-family:var(--mono);font-size:10px;color:var(--text-3);flex-wrap:wrap;}
+.fs-bar-legend span{display:flex;align-items:center;gap:5px;}
+.fs-bar-dot{width:7px;height:7px;border-radius:50%;display:inline-block;}
+
 /* ══ TYPING INDICATOR ══ */
 .typing-indicator{font-family:var(--mono);font-size:11px;color:var(--text-3);padding:6px 16px;font-style:italic;min-height:20px;display:flex;align-items:center;gap:6px;}
 .typing-dots{display:inline-flex;gap:2px;}
@@ -1024,6 +1046,7 @@ tr:last-child td{border-bottom:none;}
       <div class="nav-section-label">Management</div>
       <div class="nav-item" id="nav-forms" onclick="navigate('forms',this)"><span class="nav-icon">▣</span>Application Forms</div>
       <div class="nav-item" id="nav-form-lookup" onclick="navigate('form-lookup',this)"><span class="nav-icon">🔍</span>Form Lookup</div>
+      <div class="nav-item" id="nav-form-stats" onclick="navigate('form-stats',this)"><span class="nav-icon">📊</span>Form Stats</div>
       <div class="nav-item" id="nav-create-form" onclick="navigate('create-form',this)"><span class="nav-icon">✦</span>Create New Form</div>
       <div class="nav-item" id="nav-users" onclick="navigate('users',this)"><span class="nav-icon">◎</span>User Accounts<span class="nav-badge" id="badge-users">0</span></div>
       <div class="nav-item" id="nav-tickets" onclick="navigate('tickets',this)"><span class="nav-icon">💬</span>Support Tickets<span class="nav-badge red" id="badge-tickets">0</span></div>
@@ -1103,6 +1126,12 @@ tr:last-child td{border-bottom:none;}
           </div>
           <div id="lookup-result"></div>
         </div>
+      </div>
+
+      <!-- FORM STATS -->
+      <div class="page-section fade-in" id="page-form-stats">
+        <div class="page-header"><div class="page-header-eyebrow">Management</div><h1>Form Stats</h1><p>Submission counts, accept rates and average response time per form.</p></div>
+        <div id="form-stats-list"></div>
       </div>
 
       <!-- CREATE FORM -->
@@ -2535,6 +2564,7 @@ function refreshPage(page){
   if(page==='changelog'){renderChangelogAdmin();}
   if(page==='transcripts')renderTranscripts();
   if(page==='form-lookup'){document.getElementById('lookup-id-input').value='';document.getElementById('lookup-result').innerHTML='';}
+  if(page==='form-stats')renderFormStats();
   if(page==='feedback')renderAdminFeedback();
   if(page==='security')renderSecurityPage();
   if(page==='announcements')renderAnnouncementsPage();
@@ -5462,6 +5492,76 @@ async function sendSvAnnouncement(){
     console.warn('Supervisor announcement webhook failed:',e);
     showToast('Failed to send announcement','error');
   }
+}
+
+/* ══ FORM STATS ══ */
+function renderFormStats(){
+  const el=document.getElementById('form-stats-list');
+  if(!el)return;
+  // Owner sees all forms (own + admin + supervisor); admins see owner/admin forms (same visibility as Application Forms page)
+  const adminUsers=(db.users||[]).filter(u=>u.role==='owner'||u.role==='admin').map(u=>u.username);
+  let visibleForms=isOwner()?(db.forms||[]):(db.forms||[]).filter(f=>!f.createdBy||f.createdBy==='owner'||adminUsers.includes(f.createdBy));
+  if(!visibleForms.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">📊</div><h3>No forms yet</h3><p>Stats will appear here once forms have been created.</p></div>';
+    return;
+  }
+  el.innerHTML=visibleForms.map(f=>{
+    const apps=(db.applications||[]).filter(a=>a.formId===f.id);
+    const total=apps.length;
+    const accepted=apps.filter(a=>a.status==='accepted').length;
+    const rejected=apps.filter(a=>a.status==='rejected').length;
+    const pending=apps.filter(a=>a.status==='pending'||a.status==='review').length;
+    const decided=accepted+rejected;
+    const acceptRate=decided>0?Math.round((accepted/decided)*100):0;
+    const rejectRate=decided>0?Math.round((rejected/decided)*100):0;
+    const acceptPct=total>0?(accepted/total)*100:0;
+    const rejectPct=total>0?(rejected/total)*100:0;
+    const pendingPct=total>0?(pending/total)*100:0;
+    return `<div class="fs-card">
+      <div class="fs-card-header">
+        <div>
+          <div class="fs-card-title">${esc(f.title)}</div>
+          <div class="fs-card-meta">${esc(f.category||'—')} &middot; Created by: ${esc(f.createdBy||'owner')}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="navigate('all-apps',document.getElementById('nav-all-apps'));filterApps('')">View Applications</button>
+      </div>
+      <div class="fs-stat-row">
+        <div class="fs-stat">
+          <div class="fs-stat-label">Total Submissions</div>
+          <div class="fs-stat-val">${total}</div>
+        </div>
+        <div class="fs-stat green">
+          <div class="fs-stat-label">Accepted</div>
+          <div class="fs-stat-val">${accepted}</div>
+        </div>
+        <div class="fs-stat red">
+          <div class="fs-stat-label">Rejected</div>
+          <div class="fs-stat-val">${rejected}</div>
+        </div>
+        <div class="fs-stat yellow">
+          <div class="fs-stat-label">Pending</div>
+          <div class="fs-stat-val">${pending}</div>
+        </div>
+        <div class="fs-stat">
+          <div class="fs-stat-label">Accept Rate</div>
+          <div class="fs-stat-val">${decided>0?acceptRate+'%':'—'}</div>
+        </div>
+      </div>
+      ${total>0?`
+      <div class="fs-bar-wrap">
+        <div class="fs-bar">
+          ${acceptPct>0?'<div class="fs-bar-accepted" style="width:'+acceptPct+'%;"></div>':''}
+          ${rejectPct>0?'<div class="fs-bar-rejected" style="width:'+rejectPct+'%;"></div>':''}
+          ${pendingPct>0?'<div class="fs-bar-pending" style="width:'+pendingPct+'%;"></div>':''}
+        </div>
+        <div class="fs-bar-legend">
+          <span><span class="fs-bar-dot" style="background:var(--green);"></span>Accepted ${accepted}</span>
+          <span><span class="fs-bar-dot" style="background:var(--red);"></span>Rejected ${rejected}</span>
+          <span><span class="fs-bar-dot" style="background:var(--yellow);"></span>Pending ${pending}</span>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
 }
 
 /* ══ VIEW USER PASSWORD (security-gated) ══ */
