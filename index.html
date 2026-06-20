@@ -2158,6 +2158,67 @@ tr:last-child td{border-bottom:none;}
   </div>
 </div>
 
+
+<!-- View Password — Re-Auth Gate -->
+<div class="modal-overlay" id="modal-pwview-auth">
+  <div class="modal" style="width:460px;border-color:rgba(248,113,113,0.3);">
+    <div class="modal-header">
+      <div class="modal-title text-red">&#128272; View User Password</div>
+      <button class="modal-close" onclick="closeModal('modal-pwview-auth')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="notice" style="border-color:rgba(248,113,113,0.3);background:rgba(248,113,113,0.06);margin-bottom:20px;">
+        <div class="notice-icon">&#9888;&#65039;</div>
+        <span style="font-size:13px;">You are about to view the password for <b id="pwview-target-name">user</b>. This action is sensitive and will be logged in the Security Center with your username and the time. Re-enter <b>your own</b> password to continue.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Your Password</label>
+        <input class="form-input" id="pwview-auth-pass" type="password" placeholder="Enter your account password" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reason <span style="font-weight:400;color:var(--text-3);font-size:11px;">(shown in the security log)</span></label>
+        <input class="form-input" id="pwview-auth-reason" placeholder="e.g. Account recovery ticket #T123...">
+      </div>
+      <div style="font-family:var(--mono);font-size:11px;color:var(--red);min-height:16px;" id="pwview-auth-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-pwview-auth')">Cancel</button>
+      <button class="btn btn-danger" onclick="submitPwViewAuth()">Confirm &amp; View Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- View Password — Reveal -->
+<div class="modal-overlay" id="modal-pwview-reveal">
+  <div class="modal" style="width:420px;border-color:rgba(248,113,113,0.3);">
+    <div class="modal-header">
+      <div class="modal-title text-red">&#128272; Password Revealed</div>
+      <button class="modal-close" onclick="closeModal('modal-pwview-reveal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" style="margin-bottom:0;">
+        <div>
+          <div class="detail-key">Username</div>
+          <div class="detail-val mono" id="pwview-reveal-user">—</div>
+        </div>
+        <div>
+          <div class="detail-key">Password</div>
+          <div class="detail-val mono" id="pwview-reveal-pass" style="font-size:15px;font-weight:700;color:var(--red);">—</div>
+        </div>
+      </div>
+      <div class="notice" style="margin-top:18px;margin-bottom:0;">
+        <div class="notice-icon">&#8505;</div>
+        <span style="font-size:12px;">This reveal has been logged. The password will not be shown again unless re-verified.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="navigator.clipboard.writeText(document.getElementById('pwview-reveal-pass').textContent).then(()=>showToast('Password copied','success'))">Copy</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-pwview-reveal')">Close</button>
+    </div>
+  </div>
+</div>
+
+
 <div id="loading-overlay" style="position:fixed;inset:0;background:rgba(7,11,20,0.85);z-index:99999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="font-family:var(--sans);font-size:13px;color:var(--accent);letter-spacing:0.1em;font-weight:600;">SYNCING DATABASE…</div>
   <div style="width:200px;"><div class="loading-bar"><div class="loading-bar-fill"></div></div></div>
@@ -2199,6 +2260,7 @@ async function loadDB(){
     if(!db.announceWebhooks)db.announceWebhooks=[];
     if(!db.svAnnounceWebhooks)db.svAnnounceWebhooks={};
     if(!db.typingStatus)db.typingStatus={};
+    if(!db.pwViewLog)db.pwViewLog=[];
     // Auto-delete denied accounts past their scheduled time
     const now=Date.now();
     const toDelete=db.users.filter(u=>u.deleteAt&&now>=u.deleteAt);
@@ -2593,6 +2655,7 @@ function renderUsers(){
           ?`<button class="btn btn-success btn-sm" onclick="reopenAccount('${esc(u.username)}')">Reopen</button>`
           :u.role!=='awaiting'?`<button class="btn btn-warning btn-sm" onclick="openCloseAccountModal('${esc(u.username)}')">Close</button>`:''}
         <button class="btn btn-ghost btn-sm" onclick="openUserNotesModal('${esc(u.username)}')" title="Notes">📝${u.adminNote?'<span class=\"user-note-dot\"></span>':''}</button>
+        <button class="btn btn-danger btn-sm" onclick="openPwViewAuth('${esc(u.username)}')" title="View Password">🔒 Password</button>
         <button class="btn btn-danger btn-sm" onclick="confirmDelete('${esc(u.username)}','user','${esc(u.username)}')">Delete</button>
       </div></td>
     </tr>`;
@@ -4871,10 +4934,14 @@ function openTicketInDrawer(id){
   statusBadge.textContent = t.status.toUpperCase();
   statusBadge.className = 'td-status '+(t.status==='open'?'open':'closed');
   // Meta row
+  const pwViewBtnHtml = t.category==='account'
+    ? '<button class="btn btn-danger btn-sm" style="margin-left:auto;" onclick="openPwViewAuth(\''+t.username+'\')">&#128272; View Password</button>'
+    : '';
   document.getElementById('td-meta').innerHTML =
     '<span class="ticket-cat-badge '+t.category+'">'+(CAT_LABELS[t.category]||t.category)+'</span>'+
     '<span class="text-muted mono" style="font-size:11px;">'+t.date+'</span>'+
-    '<span style="font-size:11px;color:var(--text-3);font-family:var(--mono);">Anonymous to user</span>';
+    '<span style="font-size:11px;color:var(--text-3);font-family:var(--mono);">Anonymous to user</span>'+
+    pwViewBtnHtml;
   // Messages
   tdRenderMessages(t);
   // Input
@@ -5397,6 +5464,64 @@ async function sendSvAnnouncement(){
   }
 }
 
+/* ══ VIEW USER PASSWORD (security-gated) ══ */
+// Owner re-enters their own owner password. Admins re-enter their own admin password.
+// Either way, only the CURRENT logged-in user's own credentials unlock this — never the target user's.
+let _pwViewTargetUsername=null;
+
+function openPwViewAuth(username){
+  if(!isAdmin()){showToast('Admins and owner only','error');return;}
+  const target=db.users.find(x=>x.username===username);
+  if(!target){showToast('User not found','error');return;}
+  _pwViewTargetUsername=username;
+  document.getElementById('pwview-target-name').textContent=username;
+  document.getElementById('pwview-auth-pass').value='';
+  document.getElementById('pwview-auth-reason').value='';
+  document.getElementById('pwview-auth-error').textContent='';
+  openModal('modal-pwview-auth');
+  setTimeout(()=>document.getElementById('pwview-auth-pass').focus(),100);
+}
+
+async function submitPwViewAuth(){
+  const pass=document.getElementById('pwview-auth-pass').value.trim();
+  const reason=document.getElementById('pwview-auth-reason').value.trim();
+  const errEl=document.getElementById('pwview-auth-error');
+  if(!pass){errEl.textContent='Password required.';return;}
+  if(!_pwViewTargetUsername){errEl.textContent='No target user selected.';return;}
+
+  // Re-verify against the CURRENT user's own account (owner verifies owner pass, admin verifies their own admin pass)
+  const me=db.users.find(u=>u.username===currentUser.username);
+  if(!me||me.password!==pass){
+    errEl.textContent='Incorrect password. Access denied.';
+    logSecurityEvent('warn',currentUser.username,'Failed password-view re-auth attempt (target: '+_pwViewTargetUsername+')');
+    showLoading(true);await saveDB();showLoading(false);
+    return;
+  }
+
+  const target=db.users.find(x=>x.username===_pwViewTargetUsername);
+  if(!target){errEl.textContent='Target user no longer exists.';return;}
+
+  // Log the reveal — who viewed whose password, when, and why
+  if(!db.pwViewLog)db.pwViewLog=[];
+  db.pwViewLog.unshift({
+    viewedBy:currentUser.username,
+    viewedRole:currentUser.role,
+    target:_pwViewTargetUsername,
+    reason:reason||'(no reason given)',
+    time:nowStr(),
+    ts:Date.now()
+  });
+  logSecurityEvent('warn',currentUser.username,'Viewed password for "'+_pwViewTargetUsername+'"'+(reason?' — Reason: '+reason:''));
+  logActivity('SECURITY: '+currentUser.username+' viewed password for "'+_pwViewTargetUsername+'"','red','SYSTEM');
+
+  showLoading(true);await saveDB();showLoading(false);
+
+  closeModal('modal-pwview-auth');
+  document.getElementById('pwview-reveal-user').textContent=target.username;
+  document.getElementById('pwview-reveal-pass').textContent=target.password;
+  openModal('modal-pwview-reveal');
+}
+
 /* ══ TYPING INDICATOR ══ */
 // Lightweight presence signal stored per-ticket in the shared DB.
 // Each side writes "I'm typing" with a timestamp; the other side polls
@@ -5437,7 +5562,7 @@ function renderTypingIndicator(ticketId,viewerRole){
 
 /* ══ BOOT ══ */
 (async function boot(){
-  const HARDCODED_KEY='$2a$10$6SsB/PPtRccQ27KiEyS44O9XFiFzd0BXK5FVkFH.5HbZwYiH5EcOm';
+  const HARDCODED_KEY='$2a$10$TO05PANXis1Ueo3ZNfC24OATctFcWl4fEFHc2.GYdvL2PN3sNbKEm';
   const HARDCODED_ID='6a315432f5f4af5e29fb5a0b';
   localStorage.setItem('nx_key',HARDCODED_KEY);localStorage.setItem('nx_id',HARDCODED_ID);
   JSONBIN_KEY=HARDCODED_KEY;JSONBIN_ID=HARDCODED_ID;
